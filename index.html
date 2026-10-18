@@ -44,6 +44,7 @@ h3{font-size:15px;margin:10px 0 8px;color:#333}
 .produk .nama{font-weight:bold;font-size:13px;margin-bottom:4px}
 .produk .harga{color:#0f9d58;font-weight:bold;font-size:13px;margin-bottom:8px}
 .btn{border:none;border-radius:6px;padding:8px 10px;font-size:12px;cursor:pointer;color:#fff;font-weight:bold}
+.btn:active{transform:scale(0.95); opacity:0.8;}
 .btn-blue{background:#1a73e8}
 .btn-green{background:#0f9d58}
 .btn-red{background:#ea4335}
@@ -85,7 +86,7 @@ table.resep input{margin:0;padding:4px;font-size:11px;border:1px solid #ccc;text
 .btn-kembali-menu{background:#6c757d;color:#fff;margin-bottom:14px;}
 
 /* CSS UNTUK NOTIFIKASI TOAST / POPUP HALUS */
-#toast {visibility: hidden; min-width: 250px; background-color: rgba(51, 51, 51, 0.95); color: #fff; text-align: center; border-radius: 30px; padding: 12px 20px; position: fixed; z-index: 999999; left: 50%; transform: translateX(-50%); bottom: 30px; font-size: 14px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: opacity 0.3s, bottom 0.3s; opacity: 0; pointer-events: none;}
+#toast {visibility: hidden; min-width: 250px; background-color: rgba(40, 40, 40, 0.95); color: #fff; text-align: center; border-radius: 30px; padding: 12px 20px; position: fixed; z-index: 999999; left: 50%; transform: translateX(-50%); bottom: 30px; font-size: 14px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: opacity 0.3s, bottom 0.3s; opacity: 0; pointer-events: none;}
 #toast.show {visibility: visible; bottom: 80px; opacity: 1;}
 
 /* CSS KHUSUS UNTUK CETAK PDF / PRINTER */
@@ -152,7 +153,7 @@ table.resep input{margin:0;padding:4px;font-size:11px;border:1px solid #ccc;text
 <!-- BELANJA -->
 <div id="page-belanja" class="page">
 <button class="btn btn-kembali-menu" onclick="bukaPage('home')">⬅️ Kembali ke Menu Utama</button>
-<h2>Daftar Produk <button class="btn btn-orange top-right-btn" id="btn-edit-produk" onclick="toggleEditProduk()">✏ Edit</button> </h2>
+<h2>🛒 Pilih Produk <button class="btn btn-orange top-right-btn" id="btn-edit-produk" onclick="toggleEditProduk()">✏ Edit</button> </h2>
 <div class="grid2" id="daftar-produk"></div>
 <div id="form-tambah-produk" class="card hidden" style="margin-top:16px;background:#e8f5e9">
 <h3>➕ Tambah Produk Baru</h3>
@@ -346,7 +347,7 @@ table.resep input{margin:0;padding:4px;font-size:11px;border:1px solid #ccc;text
 <div id="modal-keluar" class="cetak-overlay" style="background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;">
 <div style="background:#fff;border-radius:12px;padding:20px;max-width:300px;width:90%;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.2);">
 <h3 style="margin-bottom:10px;font-size:16px;color:#222;">Keluar dari aplikasi?</h3>
-<p style="font-size:13px;color:#666;margin-bottom:20px;">Yakin mau keluar aplikasi?</p>
+<p style="font-size:13px;color:#666;margin-bottom:20px;">Yakin mau keluar dari aplikasi Optik Fero?</p>
 <div style="display:flex;gap:10px;">
 <button class="btn btn-red" style="flex:1;" onclick="tutupModalKeluar(false)">Tidak</button>
 <button class="btn btn-blue" style="flex:1;" onclick="tutupModalKeluar(true)">Ya</button>
@@ -355,11 +356,13 @@ table.resep input{margin:0;padding:4px;font-size:11px;border:1px solid #ccc;text
 </div>
 
 <script>
+let toastTimeout;
 function showToast(pesan) {
   var x = document.getElementById("toast");
   x.innerHTML = pesan;
   x.classList.add("show");
-  setTimeout(function(){ x.classList.remove("show"); }, 2000);
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(function(){ x.classList.remove("show"); }, 1500);
 }
 
 function formatTanggalID(dateObj) { var d = new Date(dateObj); if(isNaN(d)) return dateObj; var tgl = String(d.getDate()).padStart(2, '0'); var bln = String(d.getMonth() + 1).padStart(2, '0'); var thn = d.getFullYear(); return tgl + '-' + bln + '-' + thn; }
@@ -371,82 +374,84 @@ function simpanProduk(){localStorage.setItem('daftarProduk',JSON.stringify(produ
 function simpanSemua(){ localStorage.setItem('daftarPasien',JSON.stringify(daftarPasien)); localStorage.setItem('daftarKredit',JSON.stringify(daftarKredit)); localStorage.setItem('daftarRiwayat',JSON.stringify(daftarRiwayat)); }
 
 // --- SISTEM NAVIGASI & TOMBOL KEMBALI HP ---
-let isInitialLoad = true;
-
 function bukaPage(id, pushHistory = true) {
-document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-const targetPage = document.getElementById('page-' + id);
-if (targetPage) targetPage.classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const targetPage = document.getElementById('page-' + id);
+  if (targetPage) targetPage.classList.add('active');
 
-window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 
-if (pushHistory) {
-if (isInitialLoad) {
-history.replaceState({ page: id }, '', '#' + id);
-isInitialLoad = false;
-} else {
-history.pushState({ page: id }, '', '#' + id);
-}
-}
+  if (pushHistory) {
+    history.pushState({ page: id }, '', '#' + id);
+  }
 }
 
 window.addEventListener('popstate', function(event) {
-const modalKeluar = document.getElementById('modal-keluar');
-if (modalKeluar && modalKeluar.style.display === 'flex') {
-modalKeluar.style.display = 'none';
-history.pushState({ page: 'home' }, '', '#home');
-return;
-}
+  const state = event.state;
 
-const areaCetak = document.getElementById('area-cetak');
-if (areaCetak && areaCetak.classList.contains('show')) {
-tutupCetak();
-history.pushState({ page: currentPageAktif() }, '', '#' + currentPageAktif());
-return;
-}
+  // 1. Cek & tutup popup keluar jika terbuka
+  const modalKeluar = document.getElementById('modal-keluar');
+  if (modalKeluar && modalKeluar.style.display === 'flex') {
+    modalKeluar.style.display = 'none';
+    history.pushState({ page: 'home' }, '', '#home'); // Kembalikan ke home agar URL aman
+    return;
+  }
 
-const formPasien = document.getElementById('form-pasien');
-if (formPasien && !formPasien.classList.contains('hidden')) {
-tutupFormPasien();
-history.pushState({ page: 'pasien' }, '', '#pasien');
-return;
-}
+  // 2. Cek & tutup nota cetak jika terbuka
+  const areaCetak = document.getElementById('area-cetak');
+  if (areaCetak && areaCetak.classList.contains('show')) {
+    tutupCetak();
+    history.pushState({ page: currentPageAktif() }, '', '#' + currentPageAktif());
+    return;
+  }
 
-const currentPage = currentPageAktif();
-if (currentPage === 'home') {
-tampilkanModalKeluar();
-} else {
-bukaPage('home', false);
-}
+  // 3. Cek & tutup form pasien jika terbuka
+  const formPasien = document.getElementById('form-pasien');
+  if (formPasien && !formPasien.classList.contains('hidden')) {
+    tutupFormPasien();
+    history.pushState({ page: 'pasien' }, '', '#pasien');
+    return;
+  }
+
+  // 4. Deteksi "Mentok" di Home (Tanda Mau Keluar Aplikasi)
+  if (state && state.page === 'exit-trap') {
+    history.pushState({ page: 'home' }, '', '#home'); // Lempar kembali ke home sementara
+    tampilkanModalKeluar(); // Tampilkan popup
+    return;
+  }
+
+  // 5. Mundur satu per satu secara normal (Bukan langsung ke home)
+  if (state && state.page) {
+    bukaPage(state.page, false);
+  } else {
+    bukaPage('home', false);
+  }
 });
 
 function tampilkanModalKeluar() {
-const modal = document.getElementById('modal-keluar');
-if (modal) {
-modal.style.display = 'flex';
-history.pushState({ page: 'home', sub: 'exit-confirm' }, '', '#home');
-}
+  const modal = document.getElementById('modal-keluar');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
 }
 
 function tutupModalKeluar(isYes) {
-const modal = document.getElementById('modal-keluar');
-if (modal) {
-modal.style.display = 'none';
-}
-if (isYes) {
-window.close();
-history.go(-2);
-} else {
-history.replaceState({ page: 'home' }, '', '#home');
-}
+  const modal = document.getElementById('modal-keluar');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+  if (isYes) {
+    try { window.close(); } catch(e){} // Coba cara tutup browser
+    history.go(-2); // Langkah pamungkas mundur melewati exit-trap (akan menutup App)
+  }
 }
 
 function currentPageAktif() {
-const activePage = document.querySelector('.page.active');
-if (activePage) {
-return activePage.id.replace('page-', '');
-}
-return 'home';
+  const activePage = document.querySelector('.page.active');
+  if (activePage) {
+    return activePage.id.replace('page-', '');
+  }
+  return 'home';
 }
 
 var produkDefault=[ {id:1,nama:"Frame Biasa",harga:50000,ikon:"👓"}, {id:2,nama:"Frame Plastik",harga:75000,ikon:"👓"}, {id:3,nama:"Frame Logam",harga:120000,ikon:"👓"}, {id:4,nama:"Frame Lapis",harga:180000,ikon:"👓"}, {id:5,nama:"Lensa Bening",harga:80000,ikon:"🔍"}, {id:6,nama:"Lensa Anti Radiasi",harga:150000,ikon:"✨"}, {id:7,nama:"Lensa Photocromic",harga:250000,ikon:"☀"}, {id:8,nama:"Lensa Bifokal",harga:300000,ikon:"👁"} ];
@@ -991,7 +996,8 @@ location.reload();
 reader.readAsText(file);
 }
 
-// Inisialisasi awal halaman Home
+// Inisialisasi awal halaman Home & Setup History untuk Tombol Back
+history.replaceState({ page: 'exit-trap' }, '', '#'); // Pasang "jebakan" keluar aplikasi
 bukaPage('home', true);
 tampilkanProduk();
 tampilkanKeranjangKasir();
