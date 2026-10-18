@@ -56,6 +56,7 @@ label{font-size:13px;font-weight:bold;color:#444;display:block;margin-top:8px}
 .green{color:#0f9d58;font-weight:bold}
 .red{color:#ea4335;font-weight:bold}
 .blue{color:#1a73e8;font-weight:bold}
+.orange{color:#f57c00;font-weight:bold}
 .filter-bar{display:flex;gap:6px;margin:10px 0;flex-wrap:wrap}
 .filter-bar button{padding:6px 12px;border:none;border-radius:20px;background:#e0e0e0;font-size:12px;cursor:pointer}
 .filter-bar button.active{background:#1a73e8;color:#fff}
@@ -161,10 +162,14 @@ table.resep input{margin:0;padding:4px;font-size:11px;border:1px solid #ccc;text
 </div>
 <div id="isi-kasir"></div>
 <div class="total-box">
-<p><b>Total:</b> Rp <span id="total-kasir">0</span></p>
-<p class="green">Bayar: Rp <input type="text" id="bayar-dp-Formatted" placeholder="0" oninput="formatInputRupiah(this, 'bayar-dp'); hitungSisaKasir()" style="width:140px; display:inline-block;"></p>
+<p><b>Subtotal:</b> Rp <span id="subtotal-kasir">0</span></p>
+<p class="orange" style="margin-top:6px">Diskon/Voucher: Rp <input type="text" id="diskon-kasir-Formatted" placeholder="0" oninput="formatInputRupiah(this, 'diskon-kasir'); hitungTotalKasir()" style="width:140px; display:inline-block;"></p>
+<input type="hidden" id="diskon-kasir" value="0">
+<hr style="margin:8px 0;border:0;border-top:1px dashed #ccc">
+<p style="font-size:16px;margin-bottom:6px"><b>Total Akhir:</b> Rp <span id="total-kasir">0</span></p>
+<p class="green">Bayar Tunai/DP: Rp <input type="text" id="bayar-dp-Formatted" placeholder="0" oninput="formatInputRupiah(this, 'bayar-dp'); hitungSisaKasir()" style="width:140px; display:inline-block;"></p>
 <input type="hidden" id="bayar-dp" value="0">
-<p class="red">Sisa: Rp <span id="sisa-kasir">0</span></p>
+<p class="red">Sisa Tagihan: Rp <span id="sisa-kasir">0</span></p>
 </div>
 <div class="card">
 <h3>Data Pembeli & Ukuran Resep</h3>
@@ -198,7 +203,11 @@ table.resep input{margin:0;padding:4px;font-size:11px;border:1px solid #ccc;text
 </div>
 <div id="isi-kredit"></div>
 <div class="total-box" style="background:#fff8e1;border-color:#ffc107">
-<p><b>Total Tagihan:</b> Rp <span id="total-kredit">0</span></p>
+<p><b>Subtotal:</b> Rp <span id="subtotal-kredit">0</span></p>
+<p class="orange" style="margin-top:6px">Diskon/Voucher: Rp <input type="text" id="diskon-kredit-Formatted" placeholder="0" oninput="formatInputRupiah(this, 'diskon-kredit'); hitungKredit()" style="width:140px; display:inline-block;"></p>
+<input type="hidden" id="diskon-kredit" value="0">
+<hr style="margin:8px 0;border:0;border-top:1px dashed #ccc">
+<p style="font-size:16px;margin-bottom:6px"><b>Total Tagihan:</b> Rp <span id="total-kredit">0</span></p>
 <p class="blue">Lama Cicilan: <input type="number" id="lama-cicilan" value="1" min="1" oninput="hitungKredit()" style="width:80px"> bulan</p>
 <p class="orange"><b>Cicilan/Bulan:</b> Rp <span id="per-bulan">0</span></p>
 <p class="green" style="margin-top:6px">Bayar DP / Cicilan 1: Rp <input type="text" id="bayar-pertama-kredit-Formatted" placeholder="0" oninput="formatInputRupiah(this, 'bayar-pertama-kredit'); hitungKredit()" style="width:140px; display:inline-block;"></p>
@@ -434,17 +443,40 @@ function tambahKeKasirSatu(id){ var p=produk.find(x=>x.id===id); keranjangKasir.
 function tambahKeKreditSatu(id){ var p=produk.find(x=>x.id===id); keranjangKredit.push({nama:p.nama,harga:p.harga,ikon:p.ikon}); tampilkanKeranjangKredit(); bukaPage('kredit'); alert('✅ ' + p.nama + ' dimasukkan ke Kredit/Faktur!'); }
 function tambahManualKasir(){ var n=document.getElementById('k-nama').value.trim(),h=parseInt(document.getElementById('k-harga').value)||0; if(!n||h<=0){alert('Isi nama & harga!');return} keranjangKasir.push({nama:n,harga:h,ikon:'📝'}); document.getElementById('k-nama').value=''; document.getElementById('k-harga-Formatted').value=''; document.getElementById('k-harga').value='0'; tampilkanKeranjangKasir(); }
 function tampilkanKeranjangKasir(){ var w=document.getElementById('isi-kasir'); if(keranjangKasir.length===0){w.innerHTML='<p style="text-align:center;color:#888;padding:20px">Keranjang kosong</p>'} else{ var h='';keranjangKasir.forEach((item,i)=>h+='<div class="item-row"><div><b>'+item.ikon+' '+item.nama+'</b><br>Rp '+rp(item.harga)+'</div><button class="btn btn-red" onclick="hapusKasir('+i+')">Hapus</button></div>'); w.innerHTML=h; } hitungTotalKasir(); }
-function hapusKasir(i){keranjangKasir.splice(i,1);tampilkanKeranjangKasir()}
-function hitungTotalKasir(){ var t=keranjangKasir.reduce((s,i)=>s+i.harga,0); document.getElementById('total-kasir').textContent=rp(t); document.getElementById('jml-kasir').textContent=keranjangKasir.length; document.getElementById('jml-kasir-badge').textContent=keranjangKasir.length; hitungSisaKasir(); }
-function hitungSisaKasir(){ var t=keranjangKasir.reduce((s,i)=>s+i.harga,0); var b=parseInt(document.getElementById('bayar-dp').value)||0; var sisaKurang = Math.max(0, t - b); document.getElementById('sisa-kasir').textContent = rp(sisaKurang); }
+
+function hitungTotalKasir(){ 
+  var sub = keranjangKasir.reduce((s,i)=>s+i.harga,0); 
+  var dsk = parseInt(document.getElementById('diskon-kasir').value)||0;
+  var t = Math.max(0, sub - dsk);
+  if(document.getElementById('subtotal-kasir')) document.getElementById('subtotal-kasir').textContent = rp(sub);
+  document.getElementById('total-kasir').textContent = rp(t); 
+  document.getElementById('jml-kasir').textContent = keranjangKasir.length; 
+  document.getElementById('jml-kasir-badge').textContent = keranjangKasir.length; 
+  hitungSisaKasir(t); 
+}
+
+function hitungSisaKasir(totalAkhir){ 
+  if(totalAkhir === undefined || typeof totalAkhir === 'object') {
+     var sub = keranjangKasir.reduce((s,i)=>s+i.harga,0);
+     var dsk = parseInt(document.getElementById('diskon-kasir').value)||0;
+     totalAkhir = Math.max(0, sub - dsk);
+  }
+  var b = parseInt(document.getElementById('bayar-dp').value)||0; 
+  var sisaKurang = Math.max(0, totalAkhir - b); 
+  document.getElementById('sisa-kasir').textContent = rp(sisaKurang); 
+}
 
 function buatStrukTunai(){
 var nama=document.getElementById('k-pembeli').value.trim();
-var total=keranjangKasir.reduce((s,i)=>s+i.harga,0);
+var subtotal=keranjangKasir.reduce((s,i)=>s+i.harga,0);
+var diskon=parseInt(document.getElementById('diskon-kasir').value)||0;
+var total=Math.max(0, subtotal - diskon);
+
 var bayar=parseInt(document.getElementById('bayar-dp').value)||0;
 if(bayar === 0 && total > 0){ bayar = total; }
 var sisaTagihan = Math.max(0, total - bayar);
-if(!nama||total===0){alert('Lengkapi data!');return}
+if(!nama||subtotal===0){alert('Lengkapi data atau masukkan barang!');return}
+
 var rSph = document.getElementById('k-r-sph').value.trim() || '-';
 var rCyl = document.getElementById('k-r-cyl').value.trim() || '-';
 var rAxis = document.getElementById('k-r-axis').value.trim() || '-';
@@ -463,20 +495,20 @@ if(lensas.length > 0){ namaLensa = lensas.map(l => l.nama).join(', '); hargaLens
 if(lainnya.length > 0){ namaItemLain = lainnya.map(o => o.nama).join(', '); hargaItemLain = lainnya.reduce((sum, o) => sum + o.harga, 0); if(namaFrame === '-' && frames.length === 0 && namaLensa === '-' && lensas.length === 0){ namaFrame = lainnya.map(o => o.nama).join(', '); hargaFrame = hargaItemLain; namaItemLain = '-'; hargaItemLain = 0; } }
 
 var transId = 'INV-' + Date.now();
-var pasienBaru = { id: transId, tanggal: formatTanggalID(new Date()), nama: nama, alamat: document.getElementById('k-alamat').value.trim() || '-', hp: document.getElementById('k-hp').value.trim() || '-', rSph, rCyl, rAxis, lSph, lCyl, lAxis, add, pd, frame: namaFrame, hargaFrame: hargaFrame, lensa: namaLensa, hargaLensa: hargaLensa, namaLain: namaItemLain, hargaLain: hargaItemLain, catatan: 'Dari Transaksi Kasir', barang: keranjangKasir.slice(), total: total, bayar: bayar, sisa: sisaTagihan };
+var pasienBaru = { id: transId, tanggal: formatTanggalID(new Date()), nama: nama, alamat: document.getElementById('k-alamat').value.trim() || '-', hp: document.getElementById('k-hp').value.trim() || '-', rSph, rCyl, rAxis, lSph, lCyl, lAxis, add, pd, frame: namaFrame, hargaFrame: hargaFrame, lensa: namaLensa, hargaLensa: hargaLensa, namaLain: namaItemLain, hargaLain: hargaItemLain, catatan: 'Dari Transaksi Kasir', barang: keranjangKasir.slice(), subtotal: subtotal, diskon: diskon, total: total, bayar: bayar, sisa: sisaTagihan };
 daftarPasien.unshift(pasienBaru);
 
-var struk={ id: transId, tanggal:formatTanggalJamID(new Date()), nama:nama, hp:document.getElementById('k-hp').value.trim(), rSph, rCyl, rAxis, lSph, lCyl, lAxis, add, pd, barang:keranjangKasir.slice(), total:total, bayar:bayar, sisa:sisaTagihan, metode:document.getElementById('metode-bayar').value, status: sisaTagihan === 0 ? 'lunas' : 'sebagian' };
+var struk={ id: transId, tanggal:formatTanggalJamID(new Date()), nama:nama, hp:document.getElementById('k-hp').value.trim(), rSph, rCyl, rAxis, lSph, lCyl, lAxis, add, pd, barang:keranjangKasir.slice(), subtotal:subtotal, diskon:diskon, total:total, bayar:bayar, sisa:sisaTagihan, metode:document.getElementById('metode-bayar').value, status: sisaTagihan === 0 ? 'lunas' : 'sebagian' };
 
 daftarRiwayat.unshift(struk);
 
 var riwayatKasir = [];
 if(bayar > 0){ riwayatKasir.push({cicilanKe:1,jumlah:bayar,tanggal:formatTanggalJamID(new Date()),tanggalBayar:formatTanggalID(new Date())}); }
-var fakturKasir={ id: transId, tanggal:formatTanggalJamID(new Date()), nama:nama, hp:document.getElementById('k-hp').value.trim(), rSph, rCyl, rAxis, lSph, lCyl, lAxis, add, pd, barang:keranjangKasir.slice(), total:total, dp:bayar, bayar:bayar, sisa:sisaTagihan, lama:1, perBulan:sisaTagihan, keterangan:'Kasir: '+document.getElementById('metode-bayar').value, status: sisaTagihan === 0 ? 'lunas' : 'sebagian', riwayatBayar:riwayatKasir };
+var fakturKasir={ id: transId, tanggal:formatTanggalJamID(new Date()), nama:nama, hp:document.getElementById('k-hp').value.trim(), rSph, rCyl, rAxis, lSph, lCyl, lAxis, add, pd, barang:keranjangKasir.slice(), subtotal:subtotal, diskon:diskon, total:total, dp:bayar, bayar:bayar, sisa:sisaTagihan, lama:1, perBulan:sisaTagihan, keterangan:'Kasir: '+document.getElementById('metode-bayar').value, status: sisaTagihan === 0 ? 'lunas' : 'sebagian', riwayatBayar:riwayatKasir };
 daftarKredit.unshift(fakturKasir);
 
 simpanSemua();
-tampilkanDaftarKredit(); // Refresh tampilan Faktur
+tampilkanDaftarKredit(); 
 tampilkanRiwayat();
 tampilkanPasien();
 cetakStruk(struk,'tunai');
@@ -486,6 +518,8 @@ tampilkanKeranjangKasir();
 document.getElementById('k-pembeli').value='';
 document.getElementById('k-alamat').value='';
 document.getElementById('k-hp').value='';
+document.getElementById('diskon-kasir-Formatted').value='';
+document.getElementById('diskon-kasir').value='0';
 document.getElementById('bayar-dp-Formatted').value='';
 document.getElementById('bayar-dp').value='0';
 ['k-r-sph','k-r-cyl','k-r-axis','k-l-sph','k-l-cyl','k-l-axis','k-add','k-pd'].forEach(id=>document.getElementById(id).value='');
@@ -494,14 +528,31 @@ document.getElementById('bayar-dp').value='0';
 function tambahManualKredit(){ var n=document.getElementById('kr-nama').value.trim(),h=parseInt(document.getElementById('kr-harga').value)||0; if(!n||h<=0){alert('Isi nama & harga!');return} keranjangKredit.push({nama:n,harga:h,ikon:'📝'}); document.getElementById('kr-nama').value=''; document.getElementById('kr-harga-Formatted').value=''; document.getElementById('kr-harga').value='0'; tampilkanKeranjangKredit(); }
 function tampilkanKeranjangKredit(){ var w=document.getElementById('isi-kredit'); if(keranjangKredit.length===0){w.innerHTML='<p style="text-align:center;color:#888;padding:20px">Belum ada barang</p>'} else{ var h=''; keranjangKredit.forEach((item,i)=>h+='<div class="item-row"><div><b>'+item.ikon+' '+item.nama+'</b><br>Rp '+rp(item.harga)+'</div><button class="btn btn-red" onclick="hapusKredit('+i+')">Hapus</button></div>'); w.innerHTML=h; } hitungKredit(); }
 function hapusKredit(i){keranjangKredit.splice(i,1);tampilkanKeranjangKredit()}
-function hitungKredit(){ var total=keranjangKredit.reduce((s,i)=>s+i.harga,0); var lama=parseInt(document.getElementById('lama-cicilan').value)||1; var bayarPertama=parseInt(document.getElementById('bayar-pertama-kredit').value)||0; var sisaTagihan=Math.max(0,total-bayarPertama); document.getElementById('total-kredit').textContent=rp(total); document.getElementById('per-bulan').textContent=rp(Math.ceil(sisaTagihan/lama)); document.getElementById('sisa-kredit-baru').textContent=rp(sisaTagihan); }
+
+function hitungKredit(){ 
+  var sub=keranjangKredit.reduce((s,i)=>s+i.harga,0); 
+  var dsk=parseInt(document.getElementById('diskon-kredit').value)||0;
+  var total=Math.max(0, sub - dsk);
+  var lama=parseInt(document.getElementById('lama-cicilan').value)||1; 
+  var bayarPertama=parseInt(document.getElementById('bayar-pertama-kredit').value)||0; 
+  var sisaTagihan=Math.max(0,total-bayarPertama); 
+  
+  if(document.getElementById('subtotal-kredit')) document.getElementById('subtotal-kredit').textContent=rp(sub);
+  document.getElementById('total-kredit').textContent=rp(total); 
+  document.getElementById('per-bulan').textContent=rp(Math.ceil(sisaTagihan/lama)); 
+  document.getElementById('sisa-kredit-baru').textContent=rp(sisaTagihan); 
+}
 
 function simpanKredit(){
 var nama=document.getElementById('kr-pembeli').value.trim();
-var total=keranjangKredit.reduce((s,i)=>s+i.harga,0);
+var subtotal=keranjangKredit.reduce((s,i)=>s+i.harga,0);
+var diskon=parseInt(document.getElementById('diskon-kredit').value)||0;
+var total=Math.max(0, subtotal - diskon);
+
 var lama=parseInt(document.getElementById('lama-cicilan').value)||1;
 var bayarPertama=parseInt(document.getElementById('bayar-pertama-kredit').value)||0;
-if(!nama||total===0){alert('Lengkapi data!');return}
+if(!nama||subtotal===0){alert('Lengkapi data atau barang!');return}
+
 var sisaTagihan=Math.max(0,total-bayarPertama);
 var statusKredit=sisaTagihan===0?'lunas':'belum';
 var riwayatAwal=[];
@@ -525,10 +576,10 @@ var add = document.getElementById('kr-add').value.trim() || '-';
 var pd = document.getElementById('kr-pd').value.trim() || '-';
 
 var transId = 'KRED-' + Date.now();
-var pasienBaru = { id: transId, tanggal: formatTanggalID(new Date()), nama: nama, alamat: document.getElementById('kr-alamat').value.trim() || '-', hp: document.getElementById('kr-hp').value.trim() || '-', rSph, rCyl, rAxis, lSph, lCyl, lAxis, add, pd, frame: namaFrame, hargaFrame: hargaFrame, lensa: namaLensa, hargaLensa: hargaLensa, namaLain: namaItemLain, hargaLain: hargaItemLain, catatan: document.getElementById('kr-ket').value.trim() || 'Dari Transaksi Kredit', barang: keranjangKredit.slice(), total: total, bayar: bayarPertama, sisa: sisaTagihan };
+var pasienBaru = { id: transId, tanggal: formatTanggalID(new Date()), nama: nama, alamat: document.getElementById('kr-alamat').value.trim() || '-', hp: document.getElementById('kr-hp').value.trim() || '-', rSph, rCyl, rAxis, lSph, lCyl, lAxis, add, pd, frame: namaFrame, hargaFrame: hargaFrame, lensa: namaLensa, hargaLensa: hargaLensa, namaLain: namaItemLain, hargaLain: hargaItemLain, catatan: document.getElementById('kr-ket').value.trim() || 'Dari Transaksi Kredit', barang: keranjangKredit.slice(), subtotal: subtotal, diskon: diskon, total: total, bayar: bayarPertama, sisa: sisaTagihan };
 daftarPasien.unshift(pasienBaru);
 
-var kredit={ id: transId, tanggal:formatTanggalJamID(new Date()), nama:nama, hp:document.getElementById('kr-hp').value.trim(), rSph, rCyl, rAxis, lSph, lCyl, lAxis, add, pd, barang:keranjangKredit.slice(), total:total, dp:bayarPertama, bayar:bayarPertama, sisa:sisaTagihan, lama:lama, perBulan:Math.ceil(sisaTagihan/lama), keterangan:document.getElementById('kr-ket').value.trim(), status:statusKredit, riwayatBayar:riwayatAwal };
+var kredit={ id: transId, tanggal:formatTanggalJamID(new Date()), nama:nama, hp:document.getElementById('kr-hp').value.trim(), rSph, rCyl, rAxis, lSph, lCyl, lAxis, add, pd, barang:keranjangKredit.slice(), subtotal: subtotal, diskon: diskon, total:total, dp:bayarPertama, bayar:bayarPertama, sisa:sisaTagihan, lama:lama, perBulan:Math.ceil(sisaTagihan/lama), keterangan:document.getElementById('kr-ket').value.trim(), status:statusKredit, riwayatBayar:riwayatAwal };
 
 daftarKredit.unshift(kredit);
 daftarRiwayat.unshift({...kredit,metode:'KREDIT'});
@@ -544,14 +595,18 @@ document.getElementById('kr-pembeli').value='';
 document.getElementById('kr-alamat').value='';
 document.getElementById('kr-hp').value='';
 document.getElementById('kr-ket').value='';
+document.getElementById('diskon-kredit-Formatted').value='';
+document.getElementById('diskon-kredit').value='0';
 document.getElementById('bayar-pertama-kredit-Formatted').value='';
 document.getElementById('bayar-pertama-kredit').value='0';
 ['kr-r-sph','kr-r-cyl','kr-r-axis','kr-l-sph','kr-l-cyl','kr-l-axis','kr-add','kr-pd'].forEach(id=>document.getElementById(id).value='');
-alert('✅ Tersimpan! Cicilan pertama berhasil dicatat.');
+alert('✅ Tersimpan! Transaksi faktur berhasil dicatat.');
 }
 
 function setFilter(btn,f){ filterK=f; document.querySelectorAll('#page-kredit .filter-bar button').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); tampilkanDaftarKredit(); }
-function tampilkanDaftarKredit(){ var daftar=filterK==='semua'?daftarKredit:daftarKredit.filter(k=>k.status===filterK); var kata=(document.getElementById('cari-kredit')?.value||'').toLowerCase().trim(); if(kata)daftar=daftar.filter(k=>k.nama.toLowerCase().includes(kata)||k.hp.includes(kata)); var w=document.getElementById('daftar-kredit'); if(daftar.length===0){w.innerHTML='<p style="text-align:center;color:#888;padding:20px">Tidak ada data</p>';return} var h=''; daftar.forEach(k=>{ var bc=k.status==='lunas'?'border-lunas':k.status==='sebagian'?'border-sebagian':'border-belum'; var bs=k.status==='lunas'?'status-lunas':k.status==='sebagian'?'status-sebagian':'status-belum'; var ls=k.status==='lunas'?'✅ Lunas':k.status==='sebagian'?'🟡 Sebagian':'🔴 Belum'; var sb=(k.riwayatBayar||[]).length, nc=sb+1; h+='<div class="card '+bc+'"><h3>'+k.nama+'</h3><p style="font-size:12px;color:#666">'+k.id+' | '+k.tanggal+'</p><p>Total: Rp '+rp(k.total)+'</p><p class="red">Sisa: Rp '+rp(k.sisa)+'</p><p>Lama: '+k.lama+' bln | Rp '+rp(k.perBulan)+'/bln</p><p>Sudah bayar: '+sb+'x</p><span class="status-badge '+bs+'">'+ls+'</span>'; if(k.riwayatBayar.length>0){ h+='<div class="riwayat-bayar"><p style="font-weight:bold;margin:6px 0">📜 Riwayat Pembayaran:</p>'; k.riwayatBayar.forEach((r, idx)=>{ h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px dashed #ddd">'; h+='<span>'+(r.tanggalBayar||'-')+' (Pembayaran ke-'+r.cicilanKe+'): <b class="green">Rp '+rp(r.jumlah)+'</b></span>'; h+='<div style="display:flex;gap:4px">'; h+='<button class="btn btn-orange" style="padding:2px 6px;font-size:10px;" onclick="bukaFormEditCicilan(\''+k.id+'\','+idx+')">✏ Edit</button>'; h+='<button class="btn btn-red" style="padding:2px 6px;font-size:10px;" onclick="hapusCicilanTertentu(\''+k.id+'\','+idx+')">🗑️ Hapus</button>'; h+='</div></div>'; }); h+='</div>'; } if(k.status!=='lunas'){ h+='<div class="bayar-box"><p>Berikutnya: Pembayaran ke-'+nc+'</p><div style="display:flex;gap:6px"><input type="text" id="byr-Formatted-'+k.id+'" placeholder="Rp '+rp(k.perBulan)+'" oninput="formatInputRupiah(this, \'byr-'+k.id+'\')" style="flex:1"><input type="hidden" id="byr-'+k.id+'" value="0"><button class="btn btn-green" onclick="tambahBayar(\''+k.id+'\','+nc+')">Bayar</button></div></div>'; } h+='<div class="baris-aksi"><button class="btn btn-blue" onclick="cetakUlangKredit(\''+k.id+'\')">🖨 Cetak</button><button class="btn btn-red" onclick="hapusSatuKredit(\''+k.id+'\')">🗑 Hapus</button></div></div>'; }); w.innerHTML=h; }
+function tampilkanDaftarKredit(){ var daftar=filterK==='semua'?daftarKredit:daftarKredit.filter(k=>k.status===filterK); var kata=(document.getElementById('cari-kredit')?.value||'').toLowerCase().trim(); if(kata)daftar=daftar.filter(k=>k.nama.toLowerCase().includes(kata)||k.hp.includes(kata)); var w=document.getElementById('daftar-kredit'); if(daftar.length===0){w.innerHTML='<p style="text-align:center;color:#888;padding:20px">Tidak ada data</p>';return} var h=''; daftar.forEach(k=>{ var bc=k.status==='lunas'?'border-lunas':k.status==='sebagian'?'border-sebagian':'border-belum'; var bs=k.status==='lunas'?'status-lunas':k.status==='sebagian'?'status-sebagian':'status-belum'; var ls=k.status==='lunas'?'✅ Lunas':k.status==='sebagian'?'🟡 Sebagian':'🔴 Belum'; var sb=(k.riwayatBayar||[]).length, nc=sb+1; h+='<div class="card '+bc+'"><h3>'+k.nama+'</h3><p style="font-size:12px;color:#666">'+k.id+' | '+k.tanggal+'</p>'; 
+if(k.diskon && k.diskon > 0) h+= '<p class="orange">Potongan: -Rp '+rp(k.diskon)+'</p>';
+h+='<p><b>Total Tagihan: Rp '+rp(k.total)+'</b></p><p class="red">Sisa: Rp '+rp(k.sisa)+'</p><p>Lama: '+k.lama+' bln | Rp '+rp(k.perBulan)+'/bln</p><p>Sudah bayar: '+sb+'x</p><span class="status-badge '+bs+'">'+ls+'</span>'; if(k.riwayatBayar.length>0){ h+='<div class="riwayat-bayar"><p style="font-weight:bold;margin:6px 0">📜 Riwayat Pembayaran:</p>'; k.riwayatBayar.forEach((r, idx)=>{ h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px dashed #ddd">'; h+='<span>'+(r.tanggalBayar||'-')+' (Pembayaran ke-'+r.cicilanKe+'): <b class="green">Rp '+rp(r.jumlah)+'</b></span>'; h+='<div style="display:flex;gap:4px">'; h+='<button class="btn btn-orange" style="padding:2px 6px;font-size:10px;" onclick="bukaFormEditCicilan(\''+k.id+'\','+idx+')">✏ Edit</button>'; h+='<button class="btn btn-red" style="padding:2px 6px;font-size:10px;" onclick="hapusCicilanTertentu(\''+k.id+'\','+idx+')">🗑️ Hapus</button>'; h+='</div></div>'; }); h+='</div>'; } if(k.status!=='lunas'){ h+='<div class="bayar-box"><p>Berikutnya: Pembayaran ke-'+nc+'</p><div style="display:flex;gap:6px"><input type="text" id="byr-Formatted-'+k.id+'" placeholder="Rp '+rp(k.perBulan)+'" oninput="formatInputRupiah(this, \'byr-'+k.id+'\')" style="flex:1"><input type="hidden" id="byr-'+k.id+'" value="0"><button class="btn btn-green" onclick="tambahBayar(\''+k.id+'\','+nc+')">Bayar</button></div></div>'; } h+='<div class="baris-aksi"><button class="btn btn-blue" onclick="cetakUlangKredit(\''+k.id+'\')">🖨 Cetak</button><button class="btn btn-red" onclick="hapusSatuKredit(\''+k.id+'\')">🗑 Hapus</button></div></div>'; }); w.innerHTML=h; }
 
 function bukaFormEditCicilan(idKredit, idxRiwayat){ var k = daftarKredit.find(x => x.id === idKredit); if(!k || !k.riwayatBayar[idxRiwayat]) return; var r = k.riwayatBayar[idxRiwayat]; var newTglInput = prompt("Edit Tanggal Pembayaran (Format: DD-MM-YYYY):", r.tanggalBayar || ''); if(newTglInput === null) return; var newNominalInput = prompt("Edit Nominal Pembayaran (Rp):", r.jumlah || 0); if(newNominalInput === null) return; var cleanNominal = parseInt(newNominalInput.replace(/[^0-9]/g,'')) || 0; if(cleanNominal <= 0){ alert("Nominal tidak valid!"); return; } k.riwayatBayar[idxRiwayat].tanggalBayar = newTglInput; k.riwayatBayar[idxRiwayat].jumlah = cleanNominal; var totalDP = 0; k.riwayatBayar.forEach(item => { totalDP += item.jumlah; }); k.dp = totalDP; k.bayar = totalDP; k.sisa = Math.max(0, k.total - k.dp); k.status = k.sisa === 0 ? 'lunas' : (k.sisa < k.total ? 'sebagian' : 'belum'); var rIdx = daftarRiwayat.findIndex(r=>r.id===idKredit); if(rIdx > -1) daftarRiwayat[rIdx] = {...k, metode: k.keterangan.includes('Kasir') ? daftarRiwayat[rIdx].metode : 'KREDIT'};
 var pIdx = daftarPasien.findIndex(p=>p.id===idKredit); if(pIdx > -1) { daftarPasien[pIdx].bayar = k.bayar; daftarPasien[pIdx].sisa = k.sisa; }
@@ -667,7 +722,10 @@ hpTampil = '<a href="tel:' + p.hp + '" style="color:#1a73e8;text-decoration:none
 '<a href="https://wa.me/' + waNum + '?text=Halo%20' + encodeURIComponent(p.nama) + ',%20kacamata%20di%20Optik%20Fero%20sudah%20bisa%20diambil." target="_blank" style="color:#2e7d32;text-decoration:none;font-weight:bold;margin-left:6px;" title="WhatsApp">💬 WA</a>';
 }
 
-h+='<div class="card"><h3>'+p.nama+'</h3><p style="font-size:12px;color:#666">'+p.tanggal+' | '+hpTampil+'</p><p style="font-size:13px">Alamat: '+(p.alamat||'-')+'</p><div style="background:#f8f9fa;padding:10px;border-radius:6px;margin-top:8px;font-size:13px"><p><b>R:</b> '+(p.rSph||'-')+' / '+(p.rCyl||'-')+' × '+(p.rAxis||'-')+'</p><p><b>L:</b> '+(p.lSph||'-')+' / '+(p.lCyl||'-')+' × '+(p.lAxis||'-')+'</p><p><b>ADD:</b> '+(p.add||'-')+' | <b>PD:</b> '+(p.pd||'-')+'</p></div><p style="margin-top:8px">Frame: '+(p.frame||'-')+' | Lensa: '+(p.lensa||'-')+'</p>'+(p.namaLain && p.namaLain!=='-' && p.hargaLain>0 ? '<p>'+p.namaLain+': Rp '+rp(p.hargaLain)+'</p>' : '')+'<p class="blue">Total: Rp '+rp(p.total)+'</p><p class="green">Bayar: Rp '+rp(p.bayar)+'</p><p class="red">Sisa: Rp '+rp(p.sisa)+'</p><div class="baris-aksi"><button class="btn btn-blue" onclick="cetakDetailPasien(\''+p.id+'\')">👁 Lihat</button><button class="btn btn-green" onclick="cetakPasienLangsung(\''+p.id+'\')">🖨️ Cetak</button><button class="btn btn-red" onclick="hapusSatuPasien(\''+p.id+'\')">🗑️ Hapus</button></div></div>';
+h+='<div class="card"><h3>'+p.nama+'</h3><p style="font-size:12px;color:#666">'+p.tanggal+' | '+hpTampil+'</p><p style="font-size:13px">Alamat: '+(p.alamat||'-')+'</p><div style="background:#f8f9fa;padding:10px;border-radius:6px;margin-top:8px;font-size:13px"><p><b>R:</b> '+(p.rSph||'-')+' / '+(p.rCyl||'-')+' × '+(p.rAxis||'-')+'</p><p><b>L:</b> '+(p.lSph||'-')+' / '+(p.lCyl||'-')+' × '+(p.lAxis||'-')+'</p><p><b>ADD:</b> '+(p.add||'-')+' | <b>PD:</b> '+(p.pd||'-')+'</p></div><p style="margin-top:8px">Frame: '+(p.frame||'-')+' | Lensa: '+(p.lensa||'-')+'</p>'+(p.namaLain && p.namaLain!=='-' && p.hargaLain>0 ? '<p>'+p.namaLain+': Rp '+rp(p.hargaLain)+'</p>' : '');
+
+if(p.diskon && p.diskon > 0) { h+= '<p class="orange">Potongan Harga: -Rp '+rp(p.diskon)+'</p>'; }
+h+='<p class="blue" style="font-size:15px"><b>Total Akhir: Rp '+rp(p.total)+'</b></p><p class="green">Bayar: Rp '+rp(p.bayar)+'</p><p class="red">Sisa: Rp '+rp(p.sisa)+'</p><div class="baris-aksi"><button class="btn btn-blue" onclick="cetakDetailPasien(\''+p.id+'\')">👁 Lihat</button><button class="btn btn-green" onclick="cetakPasienLangsung(\''+p.id+'\')">🖨️ Cetak</button><button class="btn btn-red" onclick="hapusSatuPasien(\''+p.id+'\')">🗑️ Hapus</button></div></div>';
 });
 w.innerHTML=h;
 }
@@ -677,6 +735,7 @@ function padLeft(str, len) { str = String(str || ''); if (str.length > len) retu
 function centerText(text, width = 32) { text = String(text || ''); if (text.length >= width) return text.substring(0, width); var totalPadding = width - text.length; var leftPadding = Math.floor(totalPadding / 2); var rightPadding = totalPadding - leftPadding; return ' '.repeat(leftPadding) + text + ' '.repeat(rightPadding); }
 function barisFormat(nama, harga) { var namaStr = String(nama || '-'); var angkaStr = "Rp " + padLeft(rp(harga), 12); var maxNamaLen = 32 - angkaStr.length; let result = ""; if (namaStr.length > maxNamaLen) { var words = namaStr.split(' '); var currentLine = ""; for (let i = 0; i < words.length; i++) { var testLine = currentLine ? currentLine + " " + words[i] : words[i]; if (testLine.length <= maxNamaLen) { currentLine = testLine; } else { if (currentLine) { result += currentLine + "\n"; } currentLine = words[i]; } } if (currentLine) { var sisaSpasi = 32 - (currentLine.length + angkaStr.length); if (sisaSpasi < 1) sisaSpasi = 1; result += currentLine + ' '.repeat(sisaSpasi) + angkaStr + "\n"; } } else { var sisaSpasi = 32 - (namaStr.length + angkaStr.length); if (sisaSpasi < 1) sisaSpasi = 1; result += namaStr + ' '.repeat(sisaSpasi) + angkaStr + "\n"; } return result; }
 function barisFormatTotal(label, nominal) { var labelStr = String(label || ''); var angkaStr = "Rp " + padLeft(rp(nominal), 12); var sisaSpasi = 32 - (labelStr.length + angkaStr.length); if (sisaSpasi < 1) sisaSpasi = 1; return labelStr + ' '.repeat(sisaSpasi) + angkaStr + "\n"; }
+function barisFormatDiskon(label, nominal) { var labelStr = String(label || ''); var angkaStr = "-Rp " + padLeft(rp(nominal), 11); var sisaSpasi = 32 - (labelStr.length + angkaStr.length); if (sisaSpasi < 1) sisaSpasi = 1; return labelStr + ' '.repeat(sisaSpasi) + angkaStr + "\n"; }
 
 function cetakDetailPasien(id){
 var p=daftarPasien.find(x=>x.id===id);
@@ -711,7 +770,15 @@ html += '<label>Harga Frame (Rp)</label><input type="text" value="'+rp(p.hargaFr
 html += '<label>Lensa</label><input type="text" value="'+(p.lensa!=='-'?p.lensa:'')+'" disabled>';
 html += '<label>Harga Lensa (Rp)</label><input type="text" value="'+rp(p.hargaLensa||0)+'" disabled>';
 html += (p.namaLain && p.namaLain!=='-' ? '<label>Item Lain: '+p.namaLain+'</label><input type="text" value="'+rp(p.hargaLain||0)+'" disabled>' : '');
-html += '<p style="margin:8px 0"><b>Total:</b> Rp <span>'+rp(p.total)+'</span></p>';
+
+if(p.diskon && p.diskon > 0){
+  html += '<p style="margin:8px 0 4px 0"><b>Subtotal:</b> Rp <span>'+rp(p.subtotal || (p.total + p.diskon))+'</span></p>';
+  html += '<p class="orange" style="margin:4px 0"><b>Potongan Harga:</b> -Rp <span>'+rp(p.diskon)+'</span></p>';
+  html += '<p class="blue" style="margin:4px 0; font-size:15px;"><b>Total Akhir:</b> Rp <span>'+rp(p.total)+'</span></p>';
+} else {
+  html += '<p class="blue" style="margin:8px 0; font-size:15px;"><b>Total Akhir:</b> Rp <span>'+rp(p.total)+'</span></p>';
+}
+
 html += '<p class="green" style="margin:4px 0"><b>Bayar:</b> Rp <span>'+rp(p.bayar)+'</span></p>';
 html += '<p class="red" style="margin:4px 0"><b>Sisa:</b> Rp <span>'+rp(p.sisa)+'</span></p>';
 html += '<label>Keterangan</label><textarea rows="2" disabled>'+(p.catatan!=='-'?p.catatan:'')+'</textarea>';
@@ -744,7 +811,7 @@ if(p.namaLain && p.namaLain !== '-' && p.hargaLain > 0) barangList.push({nama: p
 else if(p.hargaLain > 0) barangList.push({nama: 'Biaya Lain', harga: p.hargaLain});
 if(barangList.length === 0) barangList.push({nama: 'Pemeriksaan / Kacamata', harga: p.total});
 }
-var simulasid={id:p.id.startsWith('PAS-') || p.id.startsWith('KRED-') || p.id.startsWith('INV-') ? p.id : 'INV-'+p.id, tanggal:p.tanggal, nama:p.nama, hp:p.hp, rSph:p.rSph, rCyl:p.rCyl, rAxis:p.rAxis, lSph:p.lSph, lCyl:p.lCyl, lAxis:p.lAxis, add:p.add, pd:p.pd, barang: barangList, total:p.total, bayar:p.bayar, sisa:p.sisa, metode:'Tunai', status: p.sisa === 0 ? 'lunas' : 'sebagian'};
+var simulasid={id:p.id.startsWith('PAS-') || p.id.startsWith('KRED-') || p.id.startsWith('INV-') ? p.id : 'INV-'+p.id, tanggal:p.tanggal, nama:p.nama, hp:p.hp, rSph:p.rSph, rCyl:p.rCyl, rAxis:p.rAxis, lSph:p.lSph, lCyl:p.lCyl, lAxis:p.lAxis, add:p.add, pd:p.pd, barang: barangList, subtotal: p.subtotal, diskon: p.diskon, total:p.total, bayar:p.bayar, sisa:p.sisa, metode:'Tunai', status: p.sisa === 0 ? 'lunas' : 'sebagian'};
 cetakStruk(simulasid,'tunai');
 }
 
@@ -792,11 +859,17 @@ s += barisFormat(d.frame || 'Transaksi', d.total);
 
 s += "--------------------------------\n";
 
+if(d.diskon && d.diskon > 0){
+s += barisFormatTotal("Subtotal", d.subtotal || (d.total + d.diskon));
+s += barisFormatDiskon("Potongan", d.diskon);
+s += "--------------------------------\n";
+}
+
 if(tipe==='kredit' || (d.metode === 'KREDIT')){
 var bayarKreditVal = d.bayar !== undefined ? d.bayar : (d.dp !== undefined ? d.dp : 0);
 var sisaKreditVal = d.sisa !== undefined ? d.sisa : Math.max(0, d.total - bayarKreditVal);
 s += padRight("Metode", 16) + padLeft("Kredit", 16) + "\n";
-s += barisFormatTotal("TOTAL", d.total);
+s += barisFormatTotal("TOTAL AKHIR", d.total);
 s += barisFormatTotal("Bayar", bayarKreditVal);
 s += barisFormatTotal("Sisa Tagihan", sisaKreditVal);
 s += padRight("Lama Cicilan", 15) + padLeft((d.lama || 1) + " Bln", 17) + "\n";
@@ -815,9 +888,9 @@ var bayarVal = d.bayar !== undefined && d.bayar > 0 ? d.bayar : d.total;
 var sisaTagihanVal = d.sisa !== undefined ? d.sisa : Math.max(0, d.total - bayarVal);
 
 s += padRight("Metode", 16) + padLeft(metodeVal, 16) + "\n";
-s += barisFormatTotal("TOTAL", d.total);
+s += barisFormatTotal("TOTAL AKHIR", d.total);
 s += barisFormatTotal("Bayar", bayarVal);
-s += barisFormatTotal("Sisa", sisaTagihanVal);
+s += barisFormatTotal("Sisa Tagihan", sisaTagihanVal);
 }
 
 s += "--------------------------------\n";
