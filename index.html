@@ -140,16 +140,6 @@ table.resep input{margin:0;padding:4px;font-size:11px;border:1px solid #ccc;text
 </div>
 </div>
 
-<div class="nav">
-<button onclick="bukaPage('home')">🏠 Home</button>
-<button onclick="bukaPage('belanja')">Belanja</button>
-<button onclick="bukaPage('kasir')">Kasir (<span id="jml-kasir">0</span>)</button>
-<button onclick="bukaPage('kredit')">Faktur</button>
-<button onclick="bukaPage('pasien')">Pasien</button>
-<button onclick="bukaPage('riwayat')">Riwayat</button>
-<button onclick="bukaPage('pengaturan')">⚙</button>
-</div>
-
 <!-- BELANJA -->
 <div id="page-belanja" class="page">
 <button class="btn btn-kembali-menu" onclick="bukaPage('home')">⬅️ Kembali ke Menu Utama</button>
@@ -331,7 +321,7 @@ table.resep input{margin:0;padding:4px;font-size:11px;border:1px solid #ccc;text
 </div>
 </div>
 
-<!-- AREA CETAK -->
+<!-- AREA CETAK / DETAIL -->
 <div id="area-cetak" class="cetak-overlay">
 <div class="no-print" style="display:flex; justify-content:flex-end; margin-bottom:10px; gap:6px; flex-wrap:wrap;">
 <button class="btn btn-red" onclick="tutupCetak()">✕ Tutup</button>
@@ -373,12 +363,17 @@ function setFormattedVal(hiddenId, formattedId, val){ document.getElementById(hi
 function simpanProduk(){localStorage.setItem('daftarProduk',JSON.stringify(produk))}
 function simpanSemua(){ localStorage.setItem('daftarPasien',JSON.stringify(daftarPasien)); localStorage.setItem('daftarKredit',JSON.stringify(daftarKredit)); localStorage.setItem('daftarRiwayat',JSON.stringify(daftarRiwayat)); }
 
-// --- SISTEM NAVIGASI & TOMBOL KEMBALI HP ---
+// --- SISTEM MANAJEMEN SEJARAH (HISTORY STATE) ---
+
+function currentPageAktif() {
+  const activePage = document.querySelector('.page.active');
+  return activePage ? activePage.id.replace('page-', '') : 'home';
+}
+
 function bukaPage(id, pushHistory = true) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const targetPage = document.getElementById('page-' + id);
   if (targetPage) targetPage.classList.add('active');
-
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   if (pushHistory) {
@@ -386,73 +381,68 @@ function bukaPage(id, pushHistory = true) {
   }
 }
 
+// Fungsi pencatat "Popup / Form" ke sistem history HP
+function pushOverlay(namaOverlay) {
+  history.pushState({ page: currentPageAktif(), overlay: namaOverlay }, '', '#' + namaOverlay);
+}
+
+// Fungsi mematikan semua popup jika kita memencet tombol Back
+function tutupSemuaOverlay() {
+  var mk = document.getElementById('modal-keluar'); if(mk) mk.style.display = 'none';
+  var ac = document.getElementById('area-cetak'); if(ac) { ac.classList.remove('show'); ac.style.display = 'none'; }
+  var fp = document.getElementById('form-pasien'); if(fp) fp.classList.add('hidden');
+}
+
 window.addEventListener('popstate', function(event) {
   const state = event.state;
+  tutupSemuaOverlay(); // Selalu reset & tutup pop-up setiap tombol back ditekan
 
-  // 1. Cek & tutup popup keluar jika terbuka
-  const modalKeluar = document.getElementById('modal-keluar');
-  if (modalKeluar && modalKeluar.style.display === 'flex') {
-    modalKeluar.style.display = 'none';
-    history.pushState({ page: 'home' }, '', '#home'); // Kembalikan ke home agar URL aman
-    return;
-  }
-
-  // 2. Cek & tutup nota cetak jika terbuka
-  const areaCetak = document.getElementById('area-cetak');
-  if (areaCetak && areaCetak.classList.contains('show')) {
-    tutupCetak();
-    history.pushState({ page: currentPageAktif() }, '', '#' + currentPageAktif());
-    return;
-  }
-
-  // 3. Cek & tutup form pasien jika terbuka
-  const formPasien = document.getElementById('form-pasien');
-  if (formPasien && !formPasien.classList.contains('hidden')) {
-    tutupFormPasien();
-    history.pushState({ page: 'pasien' }, '', '#pasien');
-    return;
-  }
-
-  // 4. Deteksi "Mentok" di Home (Tanda Mau Keluar Aplikasi)
-  if (state && state.page === 'exit-trap') {
-    history.pushState({ page: 'home' }, '', '#home'); // Lempar kembali ke home sementara
-    tampilkanModalKeluar(); // Tampilkan popup
-    return;
-  }
-
-  // 5. Mundur satu per satu secara normal (Bukan langsung ke home)
-  if (state && state.page) {
-    bukaPage(state.page, false);
-  } else {
+  if (!state) { // Jika history habis
     bukaPage('home', false);
+    return;
+  }
+
+  // Jika tombol back dipencet saat ada di Home (Jebakan keluar)
+  if (state.page === 'exit-trap') {
+    document.getElementById('modal-keluar').style.display = 'flex'; // Munculkan pop-up keluar
+    history.pushState({ page: 'home' }, '', '#home'); // Dorong maju lagi supaya gak bablas keluar
+    return;
+  }
+
+  // Set ulang background page
+  if (state.page) {
+    bukaPage(state.page, false);
+  }
+
+  // Jika history sebelumnya adalah saat popup terbuka, buka kembali popup-nya
+  if (state.overlay) {
+    if (state.overlay === 'cetak') {
+      var ac = document.getElementById('area-cetak');
+      ac.style.display = 'block';
+      ac.classList.add('show');
+    } else if (state.overlay === 'form-pasien') {
+      document.getElementById('form-pasien').classList.remove('hidden');
+    }
   }
 });
 
-function tampilkanModalKeluar() {
-  const modal = document.getElementById('modal-keluar');
-  if (modal) {
-    modal.style.display = 'flex';
-  }
+// Aksi menutup secara manual (oleh tombol UI) hanya butuh memicu History Back HP
+function tutupCetak() { history.back(); }
+function tutupFormPasien() { history.back(); }
+function pindahKeEditPasien(id) {
+  tutupSemuaOverlay(); // Hilangkan visual cetak sementara
+  editPasien(id); // Fungsi ini akan mendorong state 'form-pasien' ke dalam history secara rapi
 }
 
 function tutupModalKeluar(isYes) {
-  const modal = document.getElementById('modal-keluar');
-  if (modal) {
-    modal.style.display = 'none';
-  }
+  document.getElementById('modal-keluar').style.display = 'none';
   if (isYes) {
-    try { window.close(); } catch(e){} // Coba cara tutup browser
-    history.go(-2); // Langkah pamungkas mundur melewati exit-trap (akan menutup App)
+    try { window.close(); } catch(e){} // Coba tutup tab
+    history.go(-2); // Paksa lompat melewati exit-trap supaya benar-benar keluar App
   }
+  // Jika "Tidak", biarkan saja karena posisi kita sudah aman di state '#home'
 }
 
-function currentPageAktif() {
-  const activePage = document.querySelector('.page.active');
-  if (activePage) {
-    return activePage.id.replace('page-', '');
-  }
-  return 'home';
-}
 
 var produkDefault=[ {id:1,nama:"Frame Biasa",harga:50000,ikon:"👓"}, {id:2,nama:"Frame Plastik",harga:75000,ikon:"👓"}, {id:3,nama:"Frame Logam",harga:120000,ikon:"👓"}, {id:4,nama:"Frame Lapis",harga:180000,ikon:"👓"}, {id:5,nama:"Lensa Bening",harga:80000,ikon:"🔍"}, {id:6,nama:"Lensa Anti Radiasi",harga:150000,ikon:"✨"}, {id:7,nama:"Lensa Photocromic",harga:250000,ikon:"☀"}, {id:8,nama:"Lensa Bifokal",harga:300000,ikon:"👁"} ];
 var produk=JSON.parse(localStorage.getItem('daftarProduk')||'null')||produkDefault;
@@ -681,14 +671,28 @@ simpanSemua(); tampilkanDaftarKredit(); tampilkanRiwayat(); tampilkanPasien(); s
 }
 
 function cetakUlangKredit(id){var k=daftarKredit.find(x=>x.id===id);cetakStruk(k, k.keterangan.includes('Kasir') ? 'tunai' : 'kredit')}
-function bukaFormPasien(){ document.getElementById('form-pasien').classList.remove('hidden'); document.getElementById('id-pasien').value=''; document.getElementById('p-tanggal').valueAsDate=new Date(); ['p-nama','p-alamat','p-hp','p-r-sph','p-r-cyl','p-r-axis','p-l-sph','p-l-cyl','p-l-axis','p-add','p-pd','p-frame','p-lensa','p-nama-lain','p-catatan'].forEach(id=>document.getElementById(id).value=''); setFormattedVal('h-frame', 'h-frame-Formatted', 0); setFormattedVal('h-lensa', 'h-lensa-Formatted', 0); setFormattedVal('h-lain', 'h-lain-Formatted', 0); document.getElementById('total-pasien').textContent='0'; window.scrollTo({ top: 0, behavior: 'smooth' }); }
-function tutupFormPasien(){document.getElementById('form-pasien').classList.add('hidden')}
+function bukaFormPasien(){ 
+  document.getElementById('form-pasien').classList.remove('hidden'); 
+  pushOverlay('form-pasien'); // Catat ke history HP
+  
+  document.getElementById('id-pasien').value=''; 
+  document.getElementById('p-tanggal').valueAsDate=new Date(); 
+  ['p-nama','p-alamat','p-hp','p-r-sph','p-r-cyl','p-r-axis','p-l-sph','p-l-cyl','p-l-axis','p-add','p-pd','p-frame','p-lensa','p-nama-lain','p-catatan'].forEach(id=>document.getElementById(id).value=''); 
+  setFormattedVal('h-frame', 'h-frame-Formatted', 0); 
+  setFormattedVal('h-lensa', 'h-lensa-Formatted', 0); 
+  setFormattedVal('h-lain', 'h-lain-Formatted', 0); 
+  document.getElementById('total-pasien').textContent='0'; 
+  window.scrollTo({ top: 0, behavior: 'smooth' }); 
+}
+
 function hitungTotalPasien(){ var f=parseInt(document.getElementById('h-frame').value)||0; var l=parseInt(document.getElementById('h-lensa').value)||0; var ln=parseInt(document.getElementById('h-lain').value)||0; document.getElementById('total-pasien').textContent=rp(f+l+ln); }
 
 function editPasien(id){
 var p = daftarPasien.find(x => x.id === id);
 if(!p) return;
 document.getElementById('form-pasien').classList.remove('hidden');
+pushOverlay('form-pasien'); // Catat ke history HP
+
 document.getElementById('id-pasien').value = p.id;
 
 if (p.tanggal && p.tanggal.includes('-') && p.tanggal.length === 10) {
@@ -742,7 +746,10 @@ var sisaVal = existingPasien && existingPasien.sisa !== undefined ? existingPasi
 var p={ id:id||String(Date.now()), tanggal:formattedTgl, nama:document.getElementById('p-nama').value.trim(), alamat:document.getElementById('p-alamat').value.trim(), hp:document.getElementById('p-hp').value.trim(), rSph:document.getElementById('p-r-sph').value.trim()||'-', rCyl:document.getElementById('p-r-cyl').value.trim()||'-', rAxis:document.getElementById('p-r-axis').value.trim()||'-', lSph:document.getElementById('p-l-sph').value.trim()||'-', lCyl:document.getElementById('p-l-cyl').value.trim()||'-', lAxis:document.getElementById('p-l-axis').value.trim()||'-', add:document.getElementById('p-add').value.trim()||'-', pd:document.getElementById('p-pd').value.trim()||'-', frame:document.getElementById('p-frame').value.trim()||'-', hargaFrame:parseInt(document.getElementById('h-frame').value)||0, lensa:document.getElementById('p-lensa').value.trim()||'-', hargaLensa:parseInt(document.getElementById('h-lensa').value)||0, namaLain:document.getElementById('p-nama-lain').value.trim()||'-', hargaLain:parseInt(document.getElementById('h-lain').value)||0, catatan:document.getElementById('p-catatan').value.trim()||'-', total: totalVal, bayar: bayarVal, sisa: sisaVal };
 if(!p.nama){alert('Nama wajib diisi!');return}
 if(id){var i=daftarPasien.findIndex(x=>x.id===id);daftarPasien[i]=p}else{daftarPasien.unshift(p)}
-simpanSemua(); tutupFormPasien(); tampilkanPasien(); showToast('✅ Data Pasien Tersimpan!');
+simpanSemua(); 
+tampilkanPasien(); 
+showToast('✅ Data Pasien Tersimpan!');
+history.back(); // Otomatis kembali setelah simpan
 }
 
 function tampilkanPasien(daftar){
@@ -825,7 +832,7 @@ html += '<p class="green" style="margin:4px 0"><b>Bayar:</b> Rp <span>'+rp(p.bay
 html += '<p class="red" style="margin:4px 0"><b>Sisa:</b> Rp <span>'+rp(p.sisa)+'</span></p>';
 html += '<label>Keterangan</label><textarea rows="2" disabled>'+(p.catatan!=='-'?p.catatan:'')+'</textarea>';
 html += '<div class="no-print" style="display:flex;gap:8px;margin-top:14px">';
-html += '<button class="btn btn-orange" style="flex:1" onclick="tutupCetak(); editPasien(\''+p.id+'\')">✏️ Edit</button>';
+html += '<button class="btn btn-orange" style="flex:1" onclick="pindahKeEditPasien(\''+p.id+'\')">✏️ Edit</button>';
 html += '<button class="btn btn-blue" style="flex:1" onclick="tutupCetak()">Tutup</button>';
 html += '<button class="btn btn-green" style="flex:1" onclick="cetakPasienLangsung(\''+p.id+'\')">🖨️ Cetak</button>';
 html += '</div>';
@@ -835,6 +842,7 @@ document.getElementById('isi-cetak').innerHTML = html;
 var areaCetak = document.getElementById('area-cetak');
 areaCetak.style.display = 'block';
 areaCetak.classList.add('show');
+pushOverlay('cetak'); // Catat ke history HP
 }
 
 function cetakPasienLangsung(id){
@@ -944,6 +952,7 @@ document.getElementById('isi-cetak').innerText = s;
 var areaCetak = document.getElementById('area-cetak');
 areaCetak.style.display = 'block';
 areaCetak.classList.add('show');
+pushOverlay('cetak'); // Catat ke history HP
 }
 
 function cetakPDF() {
@@ -955,12 +964,6 @@ var el = document.getElementById('isi-cetak');
 var cleanText = el.innerText || el.textContent;
 var rawBTUrl = "rawbt:base64," + btoa(unescape(encodeURIComponent(cleanText)));
 window.location.href = rawBTUrl;
-}
-
-function tutupCetak(){
-var areaCetak = document.getElementById('area-cetak');
-areaCetak.classList.remove('show');
-areaCetak.style.display = 'none';
 }
 
 function backupData(){
@@ -996,9 +999,10 @@ location.reload();
 reader.readAsText(file);
 }
 
-// Inisialisasi awal halaman Home & Setup History untuk Tombol Back
-history.replaceState({ page: 'exit-trap' }, '', '#'); // Pasang "jebakan" keluar aplikasi
-bukaPage('home', true);
+// Inisialisasi awal & Pasang Jebakan Keluar Aplikasi
+history.replaceState({ page: 'exit-trap' }, '', '#'); // Pasang jebakan konfirmasi keluar di paling dasar history
+bukaPage('home', true); // Baru buka halaman Home di atasnya
+
 tampilkanProduk();
 tampilkanKeranjangKasir();
 tampilkanKeranjangKredit();
