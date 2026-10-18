@@ -84,6 +84,10 @@ table.resep input{margin:0;padding:4px;font-size:11px;border:1px solid #ccc;text
 .top-right-btn{float:right;font-size:12px;padding:6px 10px;margin-left:4px}
 .btn-kembali-menu{background:#6c757d;color:#fff;margin-bottom:14px;}
 
+/* CSS UNTUK NOTIFIKASI TOAST / POPUP HALUS */
+#toast {visibility: hidden; min-width: 250px; background-color: rgba(51, 51, 51, 0.95); color: #fff; text-align: center; border-radius: 30px; padding: 12px 20px; position: fixed; z-index: 999999; left: 50%; transform: translateX(-50%); bottom: 30px; font-size: 14px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: opacity 0.3s, bottom 0.3s; opacity: 0; pointer-events: none;}
+#toast.show {visibility: visible; bottom: 80px; opacity: 1;}
+
 /* CSS KHUSUS UNTUK CETAK PDF / PRINTER */
 @media print {
   body * { visibility: hidden; }
@@ -94,6 +98,9 @@ table.resep input{margin:0;padding:4px;font-size:11px;border:1px solid #ccc;text
 </style>
 </head>
 <body>
+
+<!-- NOTIFIKASI TOAST -->
+<div id="toast"></div>
 
 <!-- HALAMAN UTAMA (HOME) -->
 <div id="page-home" class="page active">
@@ -348,6 +355,13 @@ table.resep input{margin:0;padding:4px;font-size:11px;border:1px solid #ccc;text
 </div>
 
 <script>
+function showToast(pesan) {
+  var x = document.getElementById("toast");
+  x.innerHTML = pesan;
+  x.classList.add("show");
+  setTimeout(function(){ x.classList.remove("show"); }, 2000);
+}
+
 function formatTanggalID(dateObj) { var d = new Date(dateObj); if(isNaN(d)) return dateObj; var tgl = String(d.getDate()).padStart(2, '0'); var bln = String(d.getMonth() + 1).padStart(2, '0'); var thn = d.getFullYear(); return tgl + '-' + bln + '-' + thn; }
 function formatTanggalJamID(dateObj) { var d = new Date(dateObj); if(isNaN(d)) return dateObj; var tgl = String(d.getDate()).padStart(2, '0'); var bln = String(d.getMonth() + 1).padStart(2, '0'); var thn = d.getFullYear(); var jam = String(d.getHours()).padStart(2, '0'); var mnt = String(d.getMinutes()).padStart(2, '0'); return tgl + '-' + bln + '-' + thn + ' ' + jam + ':' + mnt; }
 function rp(n){return Number(n||0).toLocaleString('id-ID')}
@@ -445,11 +459,24 @@ var filterK='semua', filterR='semua', modeEditProduk=false;
 
 function toggleEditProduk(){ modeEditProduk=!modeEditProduk; document.getElementById('btn-edit-produk').textContent=modeEditProduk?'✅ Selesai':'✏️ Edit'; document.getElementById('form-tambah-produk').classList.toggle('hidden',!modeEditProduk); tampilkanProduk(); }
 function tampilkanProduk(){ var w=document.getElementById('daftar-produk'),h=''; produk.forEach(p=>{ if(modeEditProduk){ h+='<div class="produk"><div class="icon">'+p.ikon+'</div><input type="text" value="'+p.nama+'" id="en-'+p.id+'"><input type="text" value="'+rp(p.harga)+'" id="eh-Formatted-'+p.id+'" oninput="formatInputRupiah(this, \'eh-'+p.id+'\')" style="margin:4px 0"><input type="hidden" id="eh-'+p.id+'" value="'+p.harga+'"><div class="baris-aksi"><button class="btn btn-blue" onclick="simpanEditProduk('+p.id+')">💾</button><button class="btn btn-red" onclick="hapusProduk('+p.id+')">🗑</button></div></div>'; }else{ h+='<div class="produk"><div class="icon">'+p.ikon+'</div><div class="nama">'+p.nama+'</div><div class="harga">Rp '+rp(p.harga)+'</div><div class="baris-aksi"><button class="btn btn-blue" onclick="tambahKeKasirSatu('+p.id+')">Kasir</button><button class="btn btn-green" onclick="tambahKeKreditSatu('+p.id+')">Kredit</button></div></div>'; } }); w.innerHTML=h; }
-function simpanEditProduk(id){ var i=produk.findIndex(p=>p.id===id); produk[i].nama=document.getElementById('en-'+id).value.trim(); produk[i].harga=parseInt(document.getElementById('eh-'+id).value)||0; simpanProduk();tampilkanProduk();alert('✅ Diperbarui!'); }
+function simpanEditProduk(id){ var i=produk.findIndex(p=>p.id===id); produk[i].nama=document.getElementById('en-'+id).value.trim(); produk[i].harga=parseInt(document.getElementById('eh-'+id).value)||0; simpanProduk();tampilkanProduk(); showToast('✅ Produk diperbarui!'); }
 function hapusProduk(id){ if(!confirm('Hapus produk ini?'))return; produk=produk.filter(p=>p.id!==id);simpanProduk();tampilkanProduk(); }
-function tambahProdukBaru(){ var n=document.getElementById('prod-nama').value.trim(); var h=parseInt(document.getElementById('prod-harga').value)||0; var ik=document.getElementById('prod-ikon').value.trim()||'📦'; if(!n||h<=0){alert('Isi nama & harga!');return} var mx=produk.reduce((s,p)=>Math.max(s,p.id),0); produk.push({id:mx+1,nama:n,harga:h,ikon:ik}); simpanProduk();tampilkanProduk();alert('✅ Ditambahkan!'); document.getElementById('prod-nama').value=''; document.getElementById('prod-harga-Formatted').value=''; document.getElementById('prod-harga').value='0'; document.getElementById('prod-ikon').value=''; }
-function tambahKeKasirSatu(id){ var p=produk.find(x=>x.id===id); keranjangKasir.push({nama:p.nama,harga:p.harga,ikon:p.ikon}); tampilkanKeranjangKasir(); bukaPage('kasir'); alert('✅ ' + p.nama + ' dimasukkan ke Kasir!'); }
-function tambahKeKreditSatu(id){ var p=produk.find(x=>x.id===id); keranjangKredit.push({nama:p.nama,harga:p.harga,ikon:p.ikon}); tampilkanKeranjangKredit(); bukaPage('kredit'); alert('✅ ' + p.nama + ' dimasukkan ke Kredit/Faktur!'); }
+function tambahProdukBaru(){ var n=document.getElementById('prod-nama').value.trim(); var h=parseInt(document.getElementById('prod-harga').value)||0; var ik=document.getElementById('prod-ikon').value.trim()||'📦'; if(!n||h<=0){alert('Isi nama & harga!');return} var mx=produk.reduce((s,p)=>Math.max(s,p.id),0); produk.push({id:mx+1,nama:n,harga:h,ikon:ik}); simpanProduk();tampilkanProduk(); showToast('✅ Produk ditambahkan!'); document.getElementById('prod-nama').value=''; document.getElementById('prod-harga-Formatted').value=''; document.getElementById('prod-harga').value='0'; document.getElementById('prod-ikon').value=''; }
+
+function tambahKeKasirSatu(id){ 
+  var p = produk.find(x => x.id === id); 
+  keranjangKasir.push({nama: p.nama, harga: p.harga, ikon: p.ikon}); 
+  tampilkanKeranjangKasir(); 
+  showToast('✅ ' + p.nama + ' masuk ke Kasir'); 
+}
+
+function tambahKeKreditSatu(id){ 
+  var p = produk.find(x => x.id === id); 
+  keranjangKredit.push({nama: p.nama, harga: p.harga, ikon: p.ikon}); 
+  tampilkanKeranjangKredit(); 
+  showToast('✅ ' + p.nama + ' masuk ke Faktur'); 
+}
+
 function tambahManualKasir(){ var n=document.getElementById('k-nama').value.trim(),h=parseInt(document.getElementById('k-harga').value)||0; if(!n||h<=0){alert('Isi nama & harga!');return} keranjangKasir.push({nama:n,harga:h,ikon:'📝'}); document.getElementById('k-nama').value=''; document.getElementById('k-harga-Formatted').value=''; document.getElementById('k-harga').value='0'; tampilkanKeranjangKasir(); }
 function tampilkanKeranjangKasir(){ var w=document.getElementById('isi-kasir'); if(keranjangKasir.length===0){w.innerHTML='<p style="text-align:center;color:#888;padding:20px">Keranjang kosong</p>'} else{ var h='';keranjangKasir.forEach((item,i)=>h+='<div class="item-row"><div><b>'+item.ikon+' '+item.nama+'</b><br>Rp '+rp(item.harga)+'</div><button class="btn btn-red" onclick="hapusKasir('+i+')">Hapus</button></div>'); w.innerHTML=h; } hitungTotalKasir(); }
 function hapusKasir(i){keranjangKasir.splice(i,1);tampilkanKeranjangKasir()}
@@ -610,7 +637,7 @@ document.getElementById('diskon-kredit').value='0';
 document.getElementById('bayar-pertama-kredit-Formatted').value='';
 document.getElementById('bayar-pertama-kredit').value='0';
 ['kr-r-sph','kr-r-cyl','kr-r-axis','kr-l-sph','kr-l-cyl','kr-l-axis','kr-add','kr-pd'].forEach(id=>document.getElementById(id).value='');
-alert('✅ Tersimpan! Transaksi faktur berhasil dicatat.');
+showToast('✅ Transaksi berhasil dicatat!');
 }
 
 function setFilter(btn,f){ filterK=f; document.querySelectorAll('#page-kredit .filter-bar button').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); tampilkanDaftarKredit(); }
@@ -620,13 +647,13 @@ h+='<p><b>Total Tagihan: Rp '+rp(k.total)+'</b></p><p class="red">Sisa: Rp '+rp(
 
 function bukaFormEditCicilan(idKredit, idxRiwayat){ var k = daftarKredit.find(x => x.id === idKredit); if(!k || !k.riwayatBayar[idxRiwayat]) return; var r = k.riwayatBayar[idxRiwayat]; var newTglInput = prompt("Edit Tanggal Pembayaran (Format: DD-MM-YYYY):", r.tanggalBayar || ''); if(newTglInput === null) return; var newNominalInput = prompt("Edit Nominal Pembayaran (Rp):", r.jumlah || 0); if(newNominalInput === null) return; var cleanNominal = parseInt(newNominalInput.replace(/[^0-9]/g,'')) || 0; if(cleanNominal <= 0){ alert("Nominal tidak valid!"); return; } k.riwayatBayar[idxRiwayat].tanggalBayar = newTglInput; k.riwayatBayar[idxRiwayat].jumlah = cleanNominal; var totalDP = 0; k.riwayatBayar.forEach(item => { totalDP += item.jumlah; }); k.dp = totalDP; k.bayar = totalDP; k.sisa = Math.max(0, k.total - k.dp); k.status = k.sisa === 0 ? 'lunas' : (k.sisa < k.total ? 'sebagian' : 'belum'); var rIdx = daftarRiwayat.findIndex(r=>r.id===idKredit); if(rIdx > -1) daftarRiwayat[rIdx] = {...k, metode: k.keterangan.includes('Kasir') ? daftarRiwayat[rIdx].metode : 'KREDIT'};
 var pIdx = daftarPasien.findIndex(p=>p.id===idKredit); if(pIdx > -1) { daftarPasien[pIdx].bayar = k.bayar; daftarPasien[pIdx].sisa = k.sisa; }
-simpanSemua(); tampilkanDaftarKredit(); tampilkanRiwayat(); tampilkanPasien(); alert('✅ Data pembayaran berhasil diperbarui!'); }
+simpanSemua(); tampilkanDaftarKredit(); tampilkanRiwayat(); tampilkanPasien(); showToast('✅ Data diperbarui!'); }
 
 function hapusCicilanTertentu(idKredit, idxRiwayat){ var k = daftarKredit.find(x => x.id === idKredit); if(!k || !k.riwayatBayar[idxRiwayat]) return; if(!confirm('Yakin ingin menghapus catatan pembayaran ini?')) return; k.riwayatBayar.splice(idxRiwayat, 1); k.riwayatBayar.forEach((item, i) => { item.cicilanKe = i + 1; }); var totalDP = 0; k.riwayatBayar.forEach(item => { totalDP += item.jumlah; }); k.dp = totalDP; k.bayar = totalDP; k.sisa = Math.max(0, k.total - k.dp); k.status = k.sisa === 0 ? 'lunas' : (k.sisa < k.total ? 'sebagian' : 'belum'); var rIdx = daftarRiwayat.findIndex(r=>r.id===idKredit); if(rIdx > -1) daftarRiwayat[rIdx] = {...k, metode: k.keterangan.includes('Kasir') ? daftarRiwayat[rIdx].metode : 'KREDIT'};
 var pIdx = daftarPasien.findIndex(p=>p.id===idKredit); if(pIdx > -1) { daftarPasien[pIdx].bayar = k.bayar; daftarPasien[pIdx].sisa = k.sisa; }
-simpanSemua(); tampilkanDaftarKredit(); tampilkanRiwayat(); tampilkanPasien(); alert('✅ Pembayaran berhasil dihapus & tagihan disesuaikan!'); }
+simpanSemua(); tampilkanDaftarKredit(); tampilkanRiwayat(); tampilkanPasien(); showToast('✅ Pembayaran dihapus!'); }
 
-function hapusSatuKredit(id){ if(!confirm('Yakin hapus data tagihan ini?'))return; daftarKredit=daftarKredit.filter(k=>k.id!==id); daftarRiwayat=daftarRiwayat.filter(r=>r.id!==id); simpanSemua(); tampilkanDaftarKredit(); tampilkanRiwayat(); alert('✅ Data dihapus!'); }
+function hapusSatuKredit(id){ if(!confirm('Yakin hapus data tagihan ini?'))return; daftarKredit=daftarKredit.filter(k=>k.id!==id); daftarRiwayat=daftarRiwayat.filter(r=>r.id!==id); simpanSemua(); tampilkanDaftarKredit(); tampilkanRiwayat(); showToast('✅ Data dihapus!'); }
 
 function tambahBayar(id,ck){
 var idx=daftarKredit.findIndex(k=>k.id===id);
@@ -645,7 +672,7 @@ if(pIdx > -1) {
 daftarPasien[pIdx].bayar = daftarKredit[idx].bayar;
 daftarPasien[pIdx].sisa = daftarKredit[idx].sisa;
 }
-simpanSemua(); tampilkanDaftarKredit(); tampilkanRiwayat(); tampilkanPasien(); alert('✅ Pembayaran ke-'+ck+' Rp '+rp(tambah)+' dicatat!');
+simpanSemua(); tampilkanDaftarKredit(); tampilkanRiwayat(); tampilkanPasien(); showToast('✅ Pembayaran dicatat!');
 }
 
 function cetakUlangKredit(id){var k=daftarKredit.find(x=>x.id===id);cetakStruk(k, k.keterangan.includes('Kasir') ? 'tunai' : 'kredit')}
@@ -710,7 +737,7 @@ var sisaVal = existingPasien && existingPasien.sisa !== undefined ? existingPasi
 var p={ id:id||String(Date.now()), tanggal:formattedTgl, nama:document.getElementById('p-nama').value.trim(), alamat:document.getElementById('p-alamat').value.trim(), hp:document.getElementById('p-hp').value.trim(), rSph:document.getElementById('p-r-sph').value.trim()||'-', rCyl:document.getElementById('p-r-cyl').value.trim()||'-', rAxis:document.getElementById('p-r-axis').value.trim()||'-', lSph:document.getElementById('p-l-sph').value.trim()||'-', lCyl:document.getElementById('p-l-cyl').value.trim()||'-', lAxis:document.getElementById('p-l-axis').value.trim()||'-', add:document.getElementById('p-add').value.trim()||'-', pd:document.getElementById('p-pd').value.trim()||'-', frame:document.getElementById('p-frame').value.trim()||'-', hargaFrame:parseInt(document.getElementById('h-frame').value)||0, lensa:document.getElementById('p-lensa').value.trim()||'-', hargaLensa:parseInt(document.getElementById('h-lensa').value)||0, namaLain:document.getElementById('p-nama-lain').value.trim()||'-', hargaLain:parseInt(document.getElementById('h-lain').value)||0, catatan:document.getElementById('p-catatan').value.trim()||'-', total: totalVal, bayar: bayarVal, sisa: sisaVal };
 if(!p.nama){alert('Nama wajib diisi!');return}
 if(id){var i=daftarPasien.findIndex(x=>x.id===id);daftarPasien[i]=p}else{daftarPasien.unshift(p)}
-simpanSemua(); tutupFormPasien(); tampilkanPasien(); alert('✅ Tersimpan!');
+simpanSemua(); tutupFormPasien(); tampilkanPasien(); showToast('✅ Data Pasien Tersimpan!');
 }
 
 function tampilkanPasien(daftar){
@@ -825,11 +852,11 @@ var simulasid={id:p.id.startsWith('PAS-') || p.id.startsWith('KRED-') || p.id.st
 cetakStruk(simulasid,'tunai');
 }
 
-function hapusSatuPasien(id){ if(!confirm('Yakin hapus data pasien ini?'))return; daftarPasien=daftarPasien.filter(p=>p.id!==id); simpanSemua(); tampilkanPasien(); alert('✅ Data dihapus!'); }
+function hapusSatuPasien(id){ if(!confirm('Yakin hapus data pasien ini?'))return; daftarPasien=daftarPasien.filter(p=>p.id!==id); simpanSemua(); tampilkanPasien(); showToast('✅ Data dihapus!'); }
 function cariPasien(){ var kata=(document.getElementById('cari-pasien').value||'').toLowerCase().trim(); tampilkanPasien(kata?daftarPasien.filter(p=>p.nama.toLowerCase().includes(kata)||p.hp.includes(kata)):daftarPasien); }
 function setFilterRiwayat(btn,f){ filterR=f; document.querySelectorAll('#page-riwayat .filter-bar button').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); tampilkanRiwayat(); }
 function tampilkanRiwayat(){ var daftar=daftarRiwayat; if(filterR==='tunai')daftar=daftar.filter(r=>r.metode!=='KREDIT'); else if(filterR==='kredit')daftar=daftar.filter(r=>r.metode==='KREDIT'); else if(filterR==='lunas')daftar=daftar.filter(r=>r.status==='lunas'); else if(filterR==='belum')daftar=daftar.filter(r=>r.status!=='lunas'); var w=document.getElementById('daftar-riwayat'); if(daftar.length===0){w.innerHTML='<p style="text-align:center;color:#888;padding:20px">Belum ada riwayat</p>';return} var h=''; daftar.forEach(r=>{ var bdg=r.status==='lunas'?'status-lunas':r.status==='sebagian'?'status-sebagian':'status-belum'; var st=r.status==='lunas'?'✅ LUNAS':r.status==='sebagian'?'🟡 SEBAGIAN':'🔴 BELUM'; h+='<div class="card"><p style="font-size:12px;color:#666">'+r.tanggal+'</p><h3>'+r.nama+'</h3><p>No: '+r.id+'</p><p>Jenis: '+(r.metode||'Tunai')+'</p><p><b>Total:</b> Rp '+rp(r.total)+'</p><span class="status-badge '+bdg+'">'+st+'</span><div class="baris-aksi"><button class="btn btn-blue" onclick="bukaRiwayat(\''+r.id+'\')">🧾 Cetak</button><button class="btn btn-red" onclick="hapusSatuRiwayat(\''+r.id+'\')">🗑️ Hapus</button></div></div>'; }); w.innerHTML=h; }
-function hapusSatuRiwayat(id){ if(!confirm('Yakin hapus data riwayat ini?'))return; daftarRiwayat=daftarRiwayat.filter(r=>r.id!==id); daftarKredit=daftarKredit.filter(k=>k.id!==id); simpanSemua(); tampilkanRiwayat(); alert('✅ Data dihapus!'); }
+function hapusSatuRiwayat(id){ if(!confirm('Yakin hapus data riwayat ini?'))return; daftarRiwayat=daftarRiwayat.filter(r=>r.id!==id); daftarKredit=daftarKredit.filter(k=>k.id!==id); simpanSemua(); tampilkanRiwayat(); showToast('✅ Data dihapus!'); }
 function bukaRiwayat(id){var d=daftarRiwayat.find(r=>r.id===id);if(d)cetakStruk(d,d.metode==='KREDIT'?'kredit':'tunai')}
 
 function cetakStruk(d,tipe){
@@ -942,7 +969,7 @@ document.body.appendChild(a);
 a.click();
 document.body.removeChild(a);
 URL.revokeObjectURL(url);
-alert('✅ Backup berhasil!');
+showToast('✅ Backup berhasil!');
 }
 
 function restoreData(input){
