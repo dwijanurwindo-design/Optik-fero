@@ -91,10 +91,10 @@ table.resep input{margin:0;padding:4px;font-size:11px;border:1px solid #ccc;text
 
 /* CSS KHUSUS UNTUK CETAK PDF / PRINTER */
 @media print {
-  body * { visibility: hidden; }
-  #area-cetak, #area-cetak * { visibility: visible; }
-  #area-cetak { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 10px; background: #fff; }
-  .no-print { display: none !important; }
+body * { visibility: hidden; }
+#area-cetak, #area-cetak * { visibility: visible; }
+#area-cetak { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 10px; background: #fff; }
+.no-print { display: none !important; }
 }
 </style>
 </head>
@@ -333,26 +333,14 @@ table.resep input{margin:0;padding:4px;font-size:11px;border:1px solid #ccc;text
 </div>
 </div>
 
-<!-- MODAL KONFIRMASI KELUAR APLIKASI -->
-<div id="modal-keluar" class="cetak-overlay" style="background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;">
-<div style="background:#fff;border-radius:12px;padding:20px;max-width:300px;width:90%;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.2);">
-<h3 style="margin-bottom:10px;font-size:16px;color:#222;">Keluar dari aplikasi?</h3>
-<p style="font-size:13px;color:#666;margin-bottom:20px;">Yakin mau keluar dari aplikasi Optik Fero?</p>
-<div style="display:flex;gap:10px;">
-<button class="btn btn-red" style="flex:1;" onclick="tutupModalKeluar(false)">Tidak</button>
-<button class="btn btn-blue" style="flex:1;" onclick="tutupModalKeluar(true)">Ya</button>
-</div>
-</div>
-</div>
-
 <script>
 let toastTimeout;
 function showToast(pesan) {
-  var x = document.getElementById("toast");
-  x.innerHTML = pesan;
-  x.classList.add("show");
-  clearTimeout(toastTimeout);
-  toastTimeout = setTimeout(function(){ x.classList.remove("show"); }, 1500);
+var x = document.getElementById("toast");
+x.innerHTML = pesan;
+x.classList.add("show");
+clearTimeout(toastTimeout);
+toastTimeout = setTimeout(function(){ x.classList.remove("show"); }, 1500);
 }
 
 function formatTanggalID(dateObj) { var d = new Date(dateObj); if(isNaN(d)) return dateObj; var tgl = String(d.getDate()).padStart(2, '0'); var bln = String(d.getMonth() + 1).padStart(2, '0'); var thn = d.getFullYear(); return tgl + '-' + bln + '-' + thn; }
@@ -366,81 +354,77 @@ function simpanSemua(){ localStorage.setItem('daftarPasien',JSON.stringify(dafta
 // --- SISTEM MANAJEMEN SEJARAH (HISTORY STATE) ---
 
 function currentPageAktif() {
-  const activePage = document.querySelector('.page.active');
-  return activePage ? activePage.id.replace('page-', '') : 'home';
+const activePage = document.querySelector('.page.active');
+return activePage ? activePage.id.replace('page-', '') : 'home';
 }
 
 function bukaPage(id, pushHistory = true) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const targetPage = document.getElementById('page-' + id);
-  if (targetPage) targetPage.classList.add('active');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+const targetPage = document.getElementById('page-' + id);
+if (targetPage) targetPage.classList.add('active');
+window.scrollTo({ top: 0, behavior: 'smooth' });
 
-  if (pushHistory) {
-    history.pushState({ page: id }, '', '#' + id);
-  }
+if (pushHistory) {
+history.pushState({ page: id }, '', '#' + id);
+}
 }
 
 // Fungsi pencatat "Popup / Form" ke sistem history HP
 function pushOverlay(namaOverlay) {
-  history.pushState({ page: currentPageAktif(), overlay: namaOverlay }, '', '#' + namaOverlay);
+history.pushState({ page: currentPageAktif(), overlay: namaOverlay }, '', '#' + namaOverlay);
 }
 
 // Fungsi mematikan semua popup jika kita memencet tombol Back
 function tutupSemuaOverlay() {
-  var mk = document.getElementById('modal-keluar'); if(mk) mk.style.display = 'none';
-  var ac = document.getElementById('area-cetak'); if(ac) { ac.classList.remove('show'); ac.style.display = 'none'; }
-  var fp = document.getElementById('form-pasien'); if(fp) fp.classList.add('hidden');
+var ac = document.getElementById('area-cetak'); if(ac) { ac.classList.remove('show'); ac.style.display = 'none'; }
+var fp = document.getElementById('form-pasien'); if(fp) fp.classList.add('hidden');
 }
 
 window.addEventListener('popstate', function(event) {
-  const state = event.state;
-  tutupSemuaOverlay(); // Selalu reset & tutup pop-up setiap tombol back ditekan
+const state = event.state;
+tutupSemuaOverlay(); // Selalu reset & tutup pop-up setiap tombol back ditekan
 
-  if (!state) { // Jika history habis
-    bukaPage('home', false);
-    return;
-  }
+if (!state) { // Jika history habis
+bukaPage('home', false);
+return;
+}
 
-  // Jika tombol back dipencet saat ada di Home (Jebakan keluar)
-  if (state.page === 'exit-trap') {
-    document.getElementById('modal-keluar').style.display = 'flex'; // Munculkan pop-up keluar
-    history.pushState({ page: 'home' }, '', '#home'); // Dorong maju lagi supaya gak bablas keluar
-    return;
+// Jika tombol back dipencet saat ada di Home (Jebakan keluar langsung / mode minimalis)
+if (state.page === 'exit-trap') {
+  if (typeof navigator !== 'undefined' && navigator.app && navigator.app.exitApp) {
+    navigator.app.exitApp();
+  } else if (window.Android && window.Android.exitApp) {
+    window.Android.exitApp();
+  } else {
+    history.go(-2);
+    setTimeout(function() { window.location.href = "about:blank"; }, 100);
   }
+  return;
+}
 
-  // Set ulang background page
-  if (state.page) {
-    bukaPage(state.page, false);
-  }
+// Set ulang background page
+if (state.page) {
+bukaPage(state.page, false);
+}
 
-  // Jika history sebelumnya adalah saat popup terbuka, buka kembali popup-nya
-  if (state.overlay) {
-    if (state.overlay === 'cetak') {
-      var ac = document.getElementById('area-cetak');
-      ac.style.display = 'block';
-      ac.classList.add('show');
-    } else if (state.overlay === 'form-pasien') {
-      document.getElementById('form-pasien').classList.remove('hidden');
-    }
-  }
+// Jika history sebelumnya adalah saat popup terbuka, buka kembali popup-nya
+if (state.overlay) {
+if (state.overlay === 'cetak') {
+var ac = document.getElementById('area-cetak');
+ac.style.display = 'block';
+ac.classList.add('show');
+} else if (state.overlay === 'form-pasien') {
+document.getElementById('form-pasien').classList.remove('hidden');
+}
+}
 });
 
 // Aksi menutup secara manual (oleh tombol UI) hanya butuh memicu History Back HP
 function tutupCetak() { history.back(); }
 function tutupFormPasien() { history.back(); }
 function pindahKeEditPasien(id) {
-  tutupSemuaOverlay(); // Hilangkan visual cetak sementara
-  editPasien(id); // Fungsi ini akan mendorong state 'form-pasien' ke dalam history secara rapi
-}
-
-function tutupModalKeluar(isYes) {
-  document.getElementById('modal-keluar').style.display = 'none';
-  if (isYes) {
-    try { window.close(); } catch(e){} // Coba tutup tab
-    history.go(-2); // Paksa lompat melewati exit-trap supaya benar-benar keluar App
-  }
-  // Jika "Tidak", biarkan saja karena posisi kita sudah aman di state '#home'
+tutupSemuaOverlay(); // Hilangkan visual cetak sementara
+editPasien(id); // Fungsi ini akan mendorong state 'form-pasien' ke dalam history secara rapi
 }
 
 
@@ -458,44 +442,44 @@ function simpanEditProduk(id){ var i=produk.findIndex(p=>p.id===id); produk[i].n
 function hapusProduk(id){ if(!confirm('Hapus produk ini?'))return; produk=produk.filter(p=>p.id!==id);simpanProduk();tampilkanProduk(); }
 function tambahProdukBaru(){ var n=document.getElementById('prod-nama').value.trim(); var h=parseInt(document.getElementById('prod-harga').value)||0; var ik=document.getElementById('prod-ikon').value.trim()||'📦'; if(!n||h<=0){alert('Isi nama & harga!');return} var mx=produk.reduce((s,p)=>Math.max(s,p.id),0); produk.push({id:mx+1,nama:n,harga:h,ikon:ik}); simpanProduk();tampilkanProduk(); showToast('✅ Produk ditambahkan!'); document.getElementById('prod-nama').value=''; document.getElementById('prod-harga-Formatted').value=''; document.getElementById('prod-harga').value='0'; document.getElementById('prod-ikon').value=''; }
 
-function tambahKeKasirSatu(id){ 
-  var p = produk.find(x => x.id === id); 
-  keranjangKasir.push({nama: p.nama, harga: p.harga, ikon: p.ikon}); 
-  tampilkanKeranjangKasir(); 
-  showToast('✅ ' + p.nama + ' masuk ke Kasir'); 
+function tambahKeKasirSatu(id){
+var p = produk.find(x => x.id === id);
+keranjangKasir.push({nama: p.nama, harga: p.harga, ikon: p.ikon});
+tampilkanKeranjangKasir();
+showToast('✅ ' + p.nama + ' masuk ke Kasir');
 }
 
-function tambahKeKreditSatu(id){ 
-  var p = produk.find(x => x.id === id); 
-  keranjangKredit.push({nama: p.nama, harga: p.harga, ikon: p.ikon}); 
-  tampilkanKeranjangKredit(); 
-  showToast('✅ ' + p.nama + ' masuk ke Faktur'); 
+function tambahKeKreditSatu(id){
+var p = produk.find(x => x.id === id);
+keranjangKredit.push({nama: p.nama, harga: p.harga, ikon: p.ikon});
+tampilkanKeranjangKredit();
+showToast('✅ ' + p.nama + ' masuk ke Faktur');
 }
 
 function tambahManualKasir(){ var n=document.getElementById('k-nama').value.trim(),h=parseInt(document.getElementById('k-harga').value)||0; if(!n||h<=0){alert('Isi nama & harga!');return} keranjangKasir.push({nama:n,harga:h,ikon:'📝'}); document.getElementById('k-nama').value=''; document.getElementById('k-harga-Formatted').value=''; document.getElementById('k-harga').value='0'; tampilkanKeranjangKasir(); }
 function tampilkanKeranjangKasir(){ var w=document.getElementById('isi-kasir'); if(keranjangKasir.length===0){w.innerHTML='<p style="text-align:center;color:#888;padding:20px">Keranjang kosong</p>'} else{ var h='';keranjangKasir.forEach((item,i)=>h+='<div class="item-row"><div><b>'+item.ikon+' '+item.nama+'</b><br>Rp '+rp(item.harga)+'</div><button class="btn btn-red" onclick="hapusKasir('+i+')">Hapus</button></div>'); w.innerHTML=h; } hitungTotalKasir(); }
 function hapusKasir(i){keranjangKasir.splice(i,1);tampilkanKeranjangKasir()}
 
-function hitungTotalKasir(){ 
-  var sub = keranjangKasir.reduce((s,i)=>s+i.harga,0); 
-  var dsk = parseInt(document.getElementById('diskon-kasir').value)||0;
-  var t = Math.max(0, sub - dsk);
-  if(document.getElementById('subtotal-kasir')) document.getElementById('subtotal-kasir').textContent = rp(sub);
-  document.getElementById('total-kasir').textContent = rp(t); 
-  document.getElementById('jml-kasir').textContent = keranjangKasir.length; 
-  document.getElementById('jml-kasir-badge').textContent = keranjangKasir.length; 
-  hitungSisaKasir(t); 
+function hitungTotalKasir(){
+var sub = keranjangKasir.reduce((s,i)=>s+i.harga,0);
+var dsk = parseInt(document.getElementById('diskon-kasir').value)||0;
+var t = Math.max(0, sub - dsk);
+if(document.getElementById('subtotal-kasir')) document.getElementById('subtotal-kasir').textContent = rp(sub);
+document.getElementById('total-kasir').textContent = rp(t);
+document.getElementById('jml-kasir').textContent = keranjangKasir.length;
+document.getElementById('jml-kasir-badge').textContent = keranjangKasir.length;
+hitungSisaKasir(t);
 }
 
-function hitungSisaKasir(totalAkhir){ 
-  if(totalAkhir === undefined || typeof totalAkhir === 'object') {
-     var sub = keranjangKasir.reduce((s,i)=>s+i.harga,0);
-     var dsk = parseInt(document.getElementById('diskon-kasir').value)||0;
-     totalAkhir = Math.max(0, sub - dsk);
-  }
-  var b = parseInt(document.getElementById('bayar-dp').value)||0; 
-  var sisaKurang = Math.max(0, totalAkhir - b); 
-  document.getElementById('sisa-kasir').textContent = rp(sisaKurang); 
+function hitungSisaKasir(totalAkhir){
+if(totalAkhir === undefined || typeof totalAkhir === 'object') {
+var sub = keranjangKasir.reduce((s,i)=>s+i.harga,0);
+var dsk = parseInt(document.getElementById('diskon-kasir').value)||0;
+totalAkhir = Math.max(0, sub - dsk);
+}
+var b = parseInt(document.getElementById('bayar-dp').value)||0;
+var sisaKurang = Math.max(0, totalAkhir - b);
+document.getElementById('sisa-kasir').textContent = rp(sisaKurang);
 }
 
 function buatStrukTunai(){
@@ -540,7 +524,7 @@ var fakturKasir={ id: transId, tanggal:formatTanggalJamID(new Date()), nama:nama
 daftarKredit.unshift(fakturKasir);
 
 simpanSemua();
-tampilkanDaftarKredit(); 
+tampilkanDaftarKredit();
 tampilkanRiwayat();
 tampilkanPasien();
 cetakStruk(struk,'tunai');
@@ -561,18 +545,18 @@ function tambahManualKredit(){ var n=document.getElementById('kr-nama').value.tr
 function tampilkanKeranjangKredit(){ var w=document.getElementById('isi-kredit'); if(keranjangKredit.length===0){w.innerHTML='<p style="text-align:center;color:#888;padding:20px">Belum ada barang</p>'} else{ var h=''; keranjangKredit.forEach((item,i)=>h+='<div class="item-row"><div><b>'+item.ikon+' '+item.nama+'</b><br>Rp '+rp(item.harga)+'</div><button class="btn btn-red" onclick="hapusKredit('+i+')">Hapus</button></div>'); w.innerHTML=h; } hitungKredit(); }
 function hapusKredit(i){keranjangKredit.splice(i,1);tampilkanKeranjangKredit()}
 
-function hitungKredit(){ 
-  var sub=keranjangKredit.reduce((s,i)=>s+i.harga,0); 
-  var dsk=parseInt(document.getElementById('diskon-kredit').value)||0;
-  var total=Math.max(0, sub - dsk);
-  var lama=parseInt(document.getElementById('lama-cicilan').value)||1; 
-  var bayarPertama=parseInt(document.getElementById('bayar-pertama-kredit').value)||0; 
-  var sisaTagihan=Math.max(0,total-bayarPertama); 
-  
-  if(document.getElementById('subtotal-kredit')) document.getElementById('subtotal-kredit').textContent=rp(sub);
-  document.getElementById('total-kredit').textContent=rp(total); 
-  document.getElementById('per-bulan').textContent=rp(Math.ceil(sisaTagihan/lama)); 
-  document.getElementById('sisa-kredit-baru').textContent=rp(sisaTagihan); 
+function hitungKredit(){
+var sub=keranjangKredit.reduce((s,i)=>s+i.harga,0);
+var dsk=parseInt(document.getElementById('diskon-kredit').value)||0;
+var total=Math.max(0, sub - dsk);
+var lama=parseInt(document.getElementById('lama-cicilan').value)||1;
+var bayarPertama=parseInt(document.getElementById('bayar-pertama-kredit').value)||0;
+var sisaTagihan=Math.max(0,total-bayarPertama);
+
+if(document.getElementById('subtotal-kredit')) document.getElementById('subtotal-kredit').textContent=rp(sub);
+document.getElementById('total-kredit').textContent=rp(total);
+document.getElementById('per-bulan').textContent=rp(Math.ceil(sisaTagihan/lama));
+document.getElementById('sisa-kredit-baru').textContent=rp(sisaTagihan);
 }
 
 function simpanKredit(){
@@ -636,7 +620,7 @@ showToast('✅ Transaksi berhasil dicatat!');
 }
 
 function setFilter(btn,f){ filterK=f; document.querySelectorAll('#page-kredit .filter-bar button').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); tampilkanDaftarKredit(); }
-function tampilkanDaftarKredit(){ var daftar=filterK==='semua'?daftarKredit:daftarKredit.filter(k=>k.status===filterK); var kata=(document.getElementById('cari-kredit')?.value||'').toLowerCase().trim(); if(kata)daftar=daftar.filter(k=>k.nama.toLowerCase().includes(kata)||k.hp.includes(kata)); var w=document.getElementById('daftar-kredit'); if(daftar.length===0){w.innerHTML='<p style="text-align:center;color:#888;padding:20px">Tidak ada data</p>';return} var h=''; daftar.forEach(k=>{ var bc=k.status==='lunas'?'border-lunas':k.status==='sebagian'?'border-sebagian':'border-belum'; var bs=k.status==='lunas'?'status-lunas':k.status==='sebagian'?'status-sebagian':'status-belum'; var ls=k.status==='lunas'?'✅ Lunas':k.status==='sebagian'?'🟡 Sebagian':'🔴 Belum'; var sb=(k.riwayatBayar||[]).length, nc=sb+1; h+='<div class="card '+bc+'"><h3>'+k.nama+'</h3><p style="font-size:12px;color:#666">'+k.id+' | '+k.tanggal+'</p>'; 
+function tampilkanDaftarKredit(){ var daftar=filterK==='semua'?daftarKredit:daftarKredit.filter(k=>k.status===filterK); var kata=(document.getElementById('cari-kredit')?.value||'').toLowerCase().trim(); if(kata)daftar=daftar.filter(k=>k.nama.toLowerCase().includes(kata)||k.hp.includes(kata)); var w=document.getElementById('daftar-kredit'); if(daftar.length===0){w.innerHTML='<p style="text-align:center;color:#888;padding:20px">Tidak ada data</p>';return} var h=''; daftar.forEach(k=>{ var bc=k.status==='lunas'?'border-lunas':k.status==='sebagian'?'border-sebagian':'border-belum'; var bs=k.status==='lunas'?'status-lunas':k.status==='sebagian'?'status-sebagian':'status-belum'; var ls=k.status==='lunas'?'✅ Lunas':k.status==='sebagian'?'🟡 Sebagian':'🔴 Belum'; var sb=(k.riwayatBayar||[]).length, nc=sb+1; h+='<div class="card '+bc+'"><h3>'+k.nama+'</h3><p style="font-size:12px;color:#666">'+k.id+' | '+k.tanggal+'</p>';
 if(k.diskon && k.diskon > 0) h+= '<p class="orange">Potongan: -Rp '+rp(k.diskon)+'</p>';
 h+='<p><b>Total Tagihan: Rp '+rp(k.total)+'</b></p><p class="red">Sisa: Rp '+rp(k.sisa)+'</p><p>Lama: '+k.lama+' bln | Rp '+rp(k.perBulan)+'/bln</p><p>Sudah bayar: '+sb+'x</p><span class="status-badge '+bs+'">'+ls+'</span>'; if(k.riwayatBayar.length>0){ h+='<div class="riwayat-bayar"><p style="font-weight:bold;margin:6px 0">📜 Riwayat Pembayaran:</p>'; k.riwayatBayar.forEach((r, idx)=>{ h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px dashed #ddd">'; h+='<span>'+(r.tanggalBayar||'-')+' (Pembayaran ke-'+r.cicilanKe+'): <b class="green">Rp '+rp(r.jumlah)+'</b></span>'; h+='<div style="display:flex;gap:4px">'; h+='<button class="btn btn-orange" style="padding:2px 6px;font-size:10px;" onclick="bukaFormEditCicilan(\''+k.id+'\','+idx+')">✏ Edit</button>'; h+='<button class="btn btn-red" style="padding:2px 6px;font-size:10px;" onclick="hapusCicilanTertentu(\''+k.id+'\','+idx+')">🗑️ Hapus</button>'; h+='</div></div>'; }); h+='</div>'; } if(k.status!=='lunas'){ h+='<div class="bayar-box"><p>Berikutnya: Pembayaran ke-'+nc+'</p><div style="display:flex;gap:6px"><input type="text" id="byr-Formatted-'+k.id+'" placeholder="Rp '+rp(k.perBulan)+'" oninput="formatInputRupiah(this, \'byr-'+k.id+'\')" style="flex:1"><input type="hidden" id="byr-'+k.id+'" value="0"><button class="btn btn-green" onclick="tambahBayar(\''+k.id+'\','+nc+')">Bayar</button></div></div>'; } h+='<div class="baris-aksi"><button class="btn btn-blue" onclick="cetakUlangKredit(\''+k.id+'\')">🖨 Cetak</button><button class="btn btn-red" onclick="hapusSatuKredit(\''+k.id+'\')">🗑 Hapus</button></div></div>'; }); w.innerHTML=h; }
 
@@ -671,18 +655,18 @@ simpanSemua(); tampilkanDaftarKredit(); tampilkanRiwayat(); tampilkanPasien(); s
 }
 
 function cetakUlangKredit(id){var k=daftarKredit.find(x=>x.id===id);cetakStruk(k, k.keterangan.includes('Kasir') ? 'tunai' : 'kredit')}
-function bukaFormPasien(){ 
-  document.getElementById('form-pasien').classList.remove('hidden'); 
-  pushOverlay('form-pasien'); // Catat ke history HP
-  
-  document.getElementById('id-pasien').value=''; 
-  document.getElementById('p-tanggal').valueAsDate=new Date(); 
-  ['p-nama','p-alamat','p-hp','p-r-sph','p-r-cyl','p-r-axis','p-l-sph','p-l-cyl','p-l-axis','p-add','p-pd','p-frame','p-lensa','p-nama-lain','p-catatan'].forEach(id=>document.getElementById(id).value=''); 
-  setFormattedVal('h-frame', 'h-frame-Formatted', 0); 
-  setFormattedVal('h-lensa', 'h-lensa-Formatted', 0); 
-  setFormattedVal('h-lain', 'h-lain-Formatted', 0); 
-  document.getElementById('total-pasien').textContent='0'; 
-  window.scrollTo({ top: 0, behavior: 'smooth' }); 
+function bukaFormPasien(){
+document.getElementById('form-pasien').classList.remove('hidden');
+pushOverlay('form-pasien'); // Catat ke history HP
+
+document.getElementById('id-pasien').value='';
+document.getElementById('p-tanggal').valueAsDate=new Date();
+['p-nama','p-alamat','p-hp','p-r-sph','p-r-cyl','p-r-axis','p-l-sph','p-l-cyl','p-l-axis','p-add','p-pd','p-frame','p-lensa','p-nama-lain','p-catatan'].forEach(id=>document.getElementById(id).value='');
+setFormattedVal('h-frame', 'h-frame-Formatted', 0);
+setFormattedVal('h-lensa', 'h-lensa-Formatted', 0);
+setFormattedVal('h-lain', 'h-lain-Formatted', 0);
+document.getElementById('total-pasien').textContent='0';
+window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function hitungTotalPasien(){ var f=parseInt(document.getElementById('h-frame').value)||0; var l=parseInt(document.getElementById('h-lensa').value)||0; var ln=parseInt(document.getElementById('h-lain').value)||0; document.getElementById('total-pasien').textContent=rp(f+l+ln); }
@@ -746,8 +730,8 @@ var sisaVal = existingPasien && existingPasien.sisa !== undefined ? existingPasi
 var p={ id:id||String(Date.now()), tanggal:formattedTgl, nama:document.getElementById('p-nama').value.trim(), alamat:document.getElementById('p-alamat').value.trim(), hp:document.getElementById('p-hp').value.trim(), rSph:document.getElementById('p-r-sph').value.trim()||'-', rCyl:document.getElementById('p-r-cyl').value.trim()||'-', rAxis:document.getElementById('p-r-axis').value.trim()||'-', lSph:document.getElementById('p-l-sph').value.trim()||'-', lCyl:document.getElementById('p-l-cyl').value.trim()||'-', lAxis:document.getElementById('p-l-axis').value.trim()||'-', add:document.getElementById('p-add').value.trim()||'-', pd:document.getElementById('p-pd').value.trim()||'-', frame:document.getElementById('p-frame').value.trim()||'-', hargaFrame:parseInt(document.getElementById('h-frame').value)||0, lensa:document.getElementById('p-lensa').value.trim()||'-', hargaLensa:parseInt(document.getElementById('h-lensa').value)||0, namaLain:document.getElementById('p-nama-lain').value.trim()||'-', hargaLain:parseInt(document.getElementById('h-lain').value)||0, catatan:document.getElementById('p-catatan').value.trim()||'-', total: totalVal, bayar: bayarVal, sisa: sisaVal };
 if(!p.nama){alert('Nama wajib diisi!');return}
 if(id){var i=daftarPasien.findIndex(x=>x.id===id);daftarPasien[i]=p}else{daftarPasien.unshift(p)}
-simpanSemua(); 
-tampilkanPasien(); 
+simpanSemua();
+tampilkanPasien();
 showToast('✅ Data Pasien Tersimpan!');
 history.back(); // Otomatis kembali setelah simpan
 }
@@ -821,11 +805,11 @@ html += '<label>Harga Lensa (Rp)</label><input type="text" value="'+rp(p.hargaLe
 html += (p.namaLain && p.namaLain!=='-' ? '<label>Item Lain: '+p.namaLain+'</label><input type="text" value="'+rp(p.hargaLain||0)+'" disabled>' : '');
 
 if(p.diskon && p.diskon > 0){
-  html += '<p style="margin:8px 0 4px 0"><b>Subtotal:</b> Rp <span>'+rp(p.subtotal || (p.total + p.diskon))+'</span></p>';
-  html += '<p class="orange" style="margin:4px 0"><b>Potongan Harga:</b> -Rp <span>'+rp(p.diskon)+'</span></p>';
-  html += '<p class="blue" style="margin:4px 0; font-size:15px;"><b>Total Akhir:</b> Rp <span>'+rp(p.total)+'</span></p>';
+html += '<p style="margin:8px 0 4px 0"><b>Subtotal:</b> Rp <span>'+rp(p.subtotal || (p.total + p.diskon))+'</span></p>';
+html += '<p class="orange" style="margin:4px 0"><b>Potongan Harga:</b> -Rp <span>'+rp(p.diskon)+'</span></p>';
+html += '<p class="blue" style="margin:4px 0; font-size:15px;"><b>Total Akhir:</b> Rp <span>'+rp(p.total)+'</span></p>';
 } else {
-  html += '<p class="blue" style="margin:8px 0; font-size:15px;"><b>Total Akhir:</b> Rp <span>'+rp(p.total)+'</span></p>';
+html += '<p class="blue" style="margin:8px 0; font-size:15px;"><b>Total Akhir:</b> Rp <span>'+rp(p.total)+'</span></p>';
 }
 
 html += '<p class="green" style="margin:4px 0"><b>Bayar:</b> Rp <span>'+rp(p.bayar)+'</span></p>';
@@ -956,7 +940,7 @@ pushOverlay('cetak'); // Catat ke history HP
 }
 
 function cetakPDF() {
-  window.print();
+window.print();
 }
 
 function cetakLewatRawBT() {
