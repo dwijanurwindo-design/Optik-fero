@@ -83,6 +83,14 @@ table.resep input{margin:0;padding:4px;font-size:11px;border:1px solid #ccc;text
 .baris-aksi button{flex:1; min-width: 65px;}
 .top-right-btn{float:right;font-size:12px;padding:6px 10px;margin-left:4px}
 .btn-kembali-menu{background:#6c757d;color:#fff;margin-bottom:14px;}
+
+/* CSS KHUSUS UNTUK CETAK PDF / PRINTER */
+@media print {
+  body * { visibility: hidden; }
+  #area-cetak, #area-cetak * { visibility: visible; }
+  #area-cetak { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 10px; background: #fff; }
+  .no-print { display: none !important; }
+}
 </style>
 </head>
 <body>
@@ -317,9 +325,10 @@ table.resep input{margin:0;padding:4px;font-size:11px;border:1px solid #ccc;text
 
 <!-- AREA CETAK -->
 <div id="area-cetak" class="cetak-overlay">
-<div style="text-align:right;margin-bottom:6px">
+<div class="no-print" style="display:flex; justify-content:flex-end; margin-bottom:10px; gap:6px; flex-wrap:wrap;">
 <button class="btn btn-red" onclick="tutupCetak()">✕ Tutup</button>
-<button class="btn btn-green" style="margin-left:6px" onclick="cetakLewatRawBT()">🖨 Cetak Printer</button>
+<button class="btn btn-blue" onclick="cetakPDF()">📄 Simpan PDF</button>
+<button class="btn btn-green" onclick="cetakLewatRawBT()">🖨 Thermal</button>
 </div>
 <div id="konten-area-cetak">
 <pre id="isi-cetak" class="struk"></pre>
@@ -443,6 +452,7 @@ function tambahKeKasirSatu(id){ var p=produk.find(x=>x.id===id); keranjangKasir.
 function tambahKeKreditSatu(id){ var p=produk.find(x=>x.id===id); keranjangKredit.push({nama:p.nama,harga:p.harga,ikon:p.ikon}); tampilkanKeranjangKredit(); bukaPage('kredit'); alert('✅ ' + p.nama + ' dimasukkan ke Kredit/Faktur!'); }
 function tambahManualKasir(){ var n=document.getElementById('k-nama').value.trim(),h=parseInt(document.getElementById('k-harga').value)||0; if(!n||h<=0){alert('Isi nama & harga!');return} keranjangKasir.push({nama:n,harga:h,ikon:'📝'}); document.getElementById('k-nama').value=''; document.getElementById('k-harga-Formatted').value=''; document.getElementById('k-harga').value='0'; tampilkanKeranjangKasir(); }
 function tampilkanKeranjangKasir(){ var w=document.getElementById('isi-kasir'); if(keranjangKasir.length===0){w.innerHTML='<p style="text-align:center;color:#888;padding:20px">Keranjang kosong</p>'} else{ var h='';keranjangKasir.forEach((item,i)=>h+='<div class="item-row"><div><b>'+item.ikon+' '+item.nama+'</b><br>Rp '+rp(item.harga)+'</div><button class="btn btn-red" onclick="hapusKasir('+i+')">Hapus</button></div>'); w.innerHTML=h; } hitungTotalKasir(); }
+function hapusKasir(i){keranjangKasir.splice(i,1);tampilkanKeranjangKasir()}
 
 function hitungTotalKasir(){ 
   var sub = keranjangKasir.reduce((s,i)=>s+i.harga,0); 
@@ -782,7 +792,7 @@ if(p.diskon && p.diskon > 0){
 html += '<p class="green" style="margin:4px 0"><b>Bayar:</b> Rp <span>'+rp(p.bayar)+'</span></p>';
 html += '<p class="red" style="margin:4px 0"><b>Sisa:</b> Rp <span>'+rp(p.sisa)+'</span></p>';
 html += '<label>Keterangan</label><textarea rows="2" disabled>'+(p.catatan!=='-'?p.catatan:'')+'</textarea>';
-html += '<div style="display:flex;gap:8px;margin-top:14px">';
+html += '<div class="no-print" style="display:flex;gap:8px;margin-top:14px">';
 html += '<button class="btn btn-orange" style="flex:1" onclick="tutupCetak(); editPasien(\''+p.id+'\')">✏️ Edit</button>';
 html += '<button class="btn btn-blue" style="flex:1" onclick="tutupCetak()">Tutup</button>';
 html += '<button class="btn btn-green" style="flex:1" onclick="cetakPasienLangsung(\''+p.id+'\')">🖨️ Cetak</button>';
@@ -902,6 +912,10 @@ document.getElementById('isi-cetak').innerText = s;
 var areaCetak = document.getElementById('area-cetak');
 areaCetak.style.display = 'block';
 areaCetak.classList.add('show');
+}
+
+function cetakPDF() {
+  window.print();
 }
 
 function cetakLewatRawBT() {
